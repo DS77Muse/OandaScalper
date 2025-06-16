@@ -8923,3 +8923,609 @@
 2025-06-16 19:27:09,932 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NOK/candles
 2025-06-16 19:27:10,048 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NOK/candles
 2025-06-16 19:27:10,211 - INFO - ⏸️ No trade signal for EUR_NOK
+2025-06-16 19:27:11,216 - INFO - 
+📊 Analyzing EUR_NZD...
+2025-06-16 19:27:11,218 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:27:11,334 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:27:11,463 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:27:11,596 - INFO - ⏸️ No trade signal for EUR_NZD
+2025-06-16 19:27:12,597 - INFO - 
+📊 Analyzing EUR_SGD...
+2025-06-16 19:27:12,599 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:27:12,755 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:27:12,867 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:27:13,008 - INFO - ⏸️ No trade signal for EUR_SGD
+2025-06-16 19:27:14,011 - INFO - 
+📊 Analyzing EUR_USD...
+2025-06-16 19:27:14,013 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:27:14,128 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:27:14,254 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:27:14,417 - INFO - ⏸️ No trade signal for EUR_USD
+2025-06-16 19:27:15,419 - INFO - 
+📊 Analyzing EUR_ZAR...
+2025-06-16 19:27:15,421 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:27:15,562 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:27:15,687 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:27:15,837 - INFO - ⏸️ No trade signal for EUR_ZAR
+2025-06-16 19:27:16,841 - INFO - 
+📊 Analyzing GBP_AUD...
+2025-06-16 19:27:16,842 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:27:16,966 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:27:17,081 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:27:17,429 - INFO - ⏸️ No trade signal for GBP_AUD
+2025-06-16 19:27:18,433 - INFO - 
+📊 Analyzing GBP_CAD...
+2025-06-16 19:27:18,434 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:27:18,568 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:27:18,696 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:27:18,854 - INFO - ⏸️ No trade signal for GBP_CAD
+2025-06-16 19:27:18,984 - INFO - 🛑 Shutdown signal received. Gracefully stopping trading bot...
+2025-06-16 19:27:18,987 - INFO - ✅ Trading bot stopped successfully.
+2025-06-16 19:27:18,988 - INFO - 🧹 Performing cleanup...
+2025-06-16 19:27:18,989 - INFO - 📊 No trades executed during this session.
+2025-06-16 19:27:18,989 - INFO - 👋 Trading bot shutdown complete.
+2025-06-16 19:27:27,587 - INFO - 
+================================================================================
+🤖 OANDA PRICE ACTION TRADING BOT
+================================================================================
+🕒 Started: 2025-06-16 19:27:27
+🎯 Strategy: Multi-Timeframe Price Action + ICT Concepts
+📈 Timeframes: M15 (Context) + M5 (Zones) + M1 (Signals)
+💱 Instruments: Dynamic loading from OANDA (All major & minor pairs)
+⚙️ Risk Management: 0.5% per trade, Dynamic stops
+📊 Performance Tracking: Automated journal & analytics
+================================================================================
+
+2025-06-16 19:27:27,588 - INFO - 🗄️ Initializing trading journal database...
+2025-06-16 19:27:27,589 - INFO - 🔍 Validating trading environment...
+2025-06-16 19:27:27,590 - INFO - setting up API-client for environment practice
+2025-06-16 19:27:27,590 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:27:27,740 - INFO - ✅ Trading environment validated successfully
+2025-06-16 19:27:27,741 - INFO -    Account Balance: $69,351.78
+2025-06-16 19:27:27,741 - INFO -    Margin Available: $69,351.78
+2025-06-16 19:27:27,741 - INFO - 📋 Loading tradable instruments from OANDA...
+2025-06-16 19:27:27,742 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/instruments
+2025-06-16 19:27:27,873 - INFO - ✅ Loaded 54 tradable instruments.
+2025-06-16 19:27:27,874 - INFO - ⏰ Setting up trading schedule...
+2025-06-16 19:27:27,875 - INFO - ✅ Trading bot setup complete!
+2025-06-16 19:27:27,875 - INFO - 🚀 Starting main trading loop...
+2025-06-16 19:27:27,875 - INFO -    Press CTRL+C to stop the bot gracefully
+2025-06-16 19:28:28,057 - INFO - 
+================================================================================
+2025-06-16 19:28:28,058 - INFO - 🔄 TRADING JOB STARTED - 2025-06-16 19:28:28
+2025-06-16 19:28:28,059 - INFO - ================================================================================
+2025-06-16 19:28:28,059 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:28:28,165 - INFO - 💰 Account Status:
+2025-06-16 19:28:28,166 - INFO -    Balance: $69,351.78
+2025-06-16 19:28:28,166 - INFO -    Open Positions: 0
+2025-06-16 19:28:28,168 - INFO - 🎯 Scanning 54 instruments: AUD_CAD, AUD_CHF, AUD_HKD, AUD_JPY, AUD_NZD, AUD_SGD, AUD_USD, CAD_CHF, CAD_HKD, CAD_JPY, CAD_SGD, CHF_HKD, CHF_JPY, CHF_ZAR, EUR_AUD, EUR_CAD, EUR_CHF, EUR_GBP, EUR_HKD, EUR_JPY, EUR_NOK, EUR_NZD, EUR_SGD, EUR_USD, EUR_ZAR, GBP_AUD, GBP_CAD, GBP_CHF, GBP_HKD, GBP_JPY, GBP_NZD, GBP_SGD, GBP_USD, GBP_ZAR, HKD_JPY, NZD_CAD, NZD_CHF, NZD_HKD, NZD_JPY, NZD_SGD, NZD_USD, SGD_CHF, SGD_JPY, USD_CAD, USD_CHF, USD_CNH, USD_HKD, USD_JPY, USD_MXN, USD_NOK, USD_SGD, USD_THB, USD_ZAR, ZAR_JPY
+2025-06-16 19:28:28,169 - INFO - 
+📊 Analyzing AUD_CAD...
+2025-06-16 19:28:28,171 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CAD/candles
+2025-06-16 19:28:28,335 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CAD/candles
+2025-06-16 19:28:28,450 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CAD/candles
+2025-06-16 19:28:28,620 - INFO - ⏸️ No trade signal for AUD_CAD
+2025-06-16 19:28:29,621 - INFO - 
+📊 Analyzing AUD_CHF...
+2025-06-16 19:28:29,623 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CHF/candles
+2025-06-16 19:28:29,757 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CHF/candles
+2025-06-16 19:28:29,881 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CHF/candles
+2025-06-16 19:28:30,024 - INFO - ⏸️ No trade signal for AUD_CHF
+2025-06-16 19:28:31,026 - INFO - 
+📊 Analyzing AUD_HKD...
+2025-06-16 19:28:31,028 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_HKD/candles
+2025-06-16 19:28:31,199 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_HKD/candles
+2025-06-16 19:28:31,316 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_HKD/candles
+2025-06-16 19:28:31,449 - INFO - ⏸️ No trade signal for AUD_HKD
+2025-06-16 19:28:32,452 - INFO - 
+📊 Analyzing AUD_JPY...
+2025-06-16 19:28:32,453 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_JPY/candles
+2025-06-16 19:28:32,572 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_JPY/candles
+2025-06-16 19:28:32,679 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_JPY/candles
+2025-06-16 19:28:32,918 - INFO - ⏸️ No trade signal for AUD_JPY
+2025-06-16 19:28:33,921 - INFO - 
+📊 Analyzing AUD_NZD...
+2025-06-16 19:28:33,923 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_NZD/candles
+2025-06-16 19:28:34,052 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_NZD/candles
+2025-06-16 19:28:34,169 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_NZD/candles
+2025-06-16 19:28:34,308 - INFO - ⏸️ No trade signal for AUD_NZD
+2025-06-16 19:28:35,310 - INFO - 
+📊 Analyzing AUD_SGD...
+2025-06-16 19:28:35,311 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_SGD/candles
+2025-06-16 19:28:35,419 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_SGD/candles
+2025-06-16 19:28:35,538 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_SGD/candles
+2025-06-16 19:28:35,668 - INFO - ⏸️ No trade signal for AUD_SGD
+2025-06-16 19:28:36,670 - INFO - 
+📊 Analyzing AUD_USD...
+2025-06-16 19:28:36,672 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:28:36,783 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:28:36,902 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:28:37,032 - INFO - ⏸️ No trade signal for AUD_USD
+2025-06-16 19:28:38,037 - INFO - 
+📊 Analyzing CAD_CHF...
+2025-06-16 19:28:38,039 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_CHF/candles
+2025-06-16 19:28:38,235 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_CHF/candles
+2025-06-16 19:28:38,342 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_CHF/candles
+2025-06-16 19:28:38,577 - INFO - ⏸️ No trade signal for CAD_CHF
+2025-06-16 19:28:39,579 - INFO - 
+📊 Analyzing CAD_HKD...
+2025-06-16 19:28:39,580 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_HKD/candles
+2025-06-16 19:28:39,789 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_HKD/candles
+2025-06-16 19:28:39,901 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_HKD/candles
+2025-06-16 19:28:40,043 - INFO - ⏸️ No trade signal for CAD_HKD
+2025-06-16 19:28:41,048 - INFO - 
+📊 Analyzing CAD_JPY...
+2025-06-16 19:28:41,050 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_JPY/candles
+2025-06-16 19:28:41,409 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_JPY/candles
+2025-06-16 19:28:41,516 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_JPY/candles
+2025-06-16 19:28:41,661 - INFO - ⏸️ No trade signal for CAD_JPY
+2025-06-16 19:28:42,665 - INFO - 
+📊 Analyzing CAD_SGD...
+2025-06-16 19:28:42,667 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_SGD/candles
+2025-06-16 19:28:42,791 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_SGD/candles
+2025-06-16 19:28:42,900 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_SGD/candles
+2025-06-16 19:28:43,049 - INFO - ⏸️ No trade signal for CAD_SGD
+2025-06-16 19:28:44,050 - INFO - 
+📊 Analyzing CHF_HKD...
+2025-06-16 19:28:44,052 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_HKD/candles
+2025-06-16 19:28:44,253 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_HKD/candles
+2025-06-16 19:28:44,368 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_HKD/candles
+2025-06-16 19:28:44,521 - INFO - ⏸️ No trade signal for CHF_HKD
+2025-06-16 19:28:45,523 - INFO - 
+📊 Analyzing CHF_JPY...
+2025-06-16 19:28:45,524 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_JPY/candles
+2025-06-16 19:28:45,733 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_JPY/candles
+2025-06-16 19:28:45,940 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_JPY/candles
+2025-06-16 19:28:46,079 - INFO - ⏸️ No trade signal for CHF_JPY
+2025-06-16 19:28:47,086 - INFO - 
+📊 Analyzing CHF_ZAR...
+2025-06-16 19:28:47,088 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_ZAR/candles
+2025-06-16 19:28:47,200 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_ZAR/candles
+2025-06-16 19:28:47,309 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_ZAR/candles
+2025-06-16 19:28:47,444 - INFO - ⏸️ No trade signal for CHF_ZAR
+2025-06-16 19:28:48,445 - INFO - 
+📊 Analyzing EUR_AUD...
+2025-06-16 19:28:48,447 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_AUD/candles
+2025-06-16 19:28:48,554 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_AUD/candles
+2025-06-16 19:28:48,702 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_AUD/candles
+2025-06-16 19:28:48,824 - INFO - ⏸️ No trade signal for EUR_AUD
+2025-06-16 19:28:49,829 - INFO - 
+📊 Analyzing EUR_CAD...
+2025-06-16 19:28:49,831 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CAD/candles
+2025-06-16 19:28:50,002 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CAD/candles
+2025-06-16 19:28:50,165 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CAD/candles
+2025-06-16 19:28:50,397 - INFO - ⏸️ No trade signal for EUR_CAD
+2025-06-16 19:28:51,399 - INFO - 
+📊 Analyzing EUR_CHF...
+2025-06-16 19:28:51,400 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CHF/candles
+2025-06-16 19:28:51,529 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CHF/candles
+2025-06-16 19:28:51,724 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CHF/candles
+2025-06-16 19:28:51,942 - INFO - ⏸️ No trade signal for EUR_CHF
+2025-06-16 19:28:52,945 - INFO - 
+📊 Analyzing EUR_GBP...
+2025-06-16 19:28:52,947 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_GBP/candles
+2025-06-16 19:28:53,060 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_GBP/candles
+2025-06-16 19:28:53,344 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_GBP/candles
+2025-06-16 19:28:53,468 - INFO - ⏸️ No trade signal for EUR_GBP
+2025-06-16 19:28:54,470 - INFO - 
+📊 Analyzing EUR_HKD...
+2025-06-16 19:28:54,472 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_HKD/candles
+2025-06-16 19:28:54,582 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_HKD/candles
+2025-06-16 19:28:54,695 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_HKD/candles
+2025-06-16 19:28:55,025 - INFO - ⏸️ No trade signal for EUR_HKD
+2025-06-16 19:28:56,027 - INFO - 
+📊 Analyzing EUR_JPY...
+2025-06-16 19:28:56,028 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_JPY/candles
+2025-06-16 19:28:56,258 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_JPY/candles
+2025-06-16 19:28:56,367 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_JPY/candles
+2025-06-16 19:28:56,530 - INFO - ⏸️ No trade signal for EUR_JPY
+2025-06-16 19:28:57,531 - INFO - 
+📊 Analyzing EUR_NOK...
+2025-06-16 19:28:57,533 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NOK/candles
+2025-06-16 19:28:57,771 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NOK/candles
+2025-06-16 19:28:57,903 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NOK/candles
+2025-06-16 19:28:58,064 - INFO - ⏸️ No trade signal for EUR_NOK
+2025-06-16 19:28:59,067 - INFO - 
+📊 Analyzing EUR_NZD...
+2025-06-16 19:28:59,069 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:28:59,264 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:28:59,371 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:28:59,524 - INFO - ⏸️ No trade signal for EUR_NZD
+2025-06-16 19:29:00,527 - INFO - 
+📊 Analyzing EUR_SGD...
+2025-06-16 19:29:00,529 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:29:00,640 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:29:00,831 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:29:00,963 - INFO - ⏸️ No trade signal for EUR_SGD
+2025-06-16 19:29:01,964 - INFO - 
+📊 Analyzing EUR_USD...
+2025-06-16 19:29:01,966 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:29:02,078 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:29:02,196 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:29:02,363 - INFO - ⏸️ No trade signal for EUR_USD
+2025-06-16 19:29:03,368 - INFO - 
+📊 Analyzing EUR_ZAR...
+2025-06-16 19:29:03,370 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:29:03,557 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:29:03,669 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:29:03,804 - INFO - ⏸️ No trade signal for EUR_ZAR
+2025-06-16 19:29:04,808 - INFO - 
+📊 Analyzing GBP_AUD...
+2025-06-16 19:29:04,810 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:29:04,932 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:29:05,040 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:29:05,220 - INFO - ⏸️ No trade signal for GBP_AUD
+2025-06-16 19:29:06,222 - INFO - 
+📊 Analyzing GBP_CAD...
+2025-06-16 19:29:06,224 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:29:06,335 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:29:06,502 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:29:06,687 - INFO - ⏸️ No trade signal for GBP_CAD
+2025-06-16 19:29:07,689 - INFO - 
+📊 Analyzing GBP_CHF...
+2025-06-16 19:29:07,691 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CHF/candles
+2025-06-16 19:29:07,803 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CHF/candles
+2025-06-16 19:29:07,911 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CHF/candles
+2025-06-16 19:29:08,104 - INFO - ⏸️ No trade signal for GBP_CHF
+2025-06-16 19:29:09,112 - INFO - 
+📊 Analyzing GBP_HKD...
+2025-06-16 19:29:09,114 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_HKD/candles
+2025-06-16 19:29:09,221 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_HKD/candles
+2025-06-16 19:29:09,331 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_HKD/candles
+2025-06-16 19:29:09,514 - INFO - ⏸️ No trade signal for GBP_HKD
+2025-06-16 19:29:10,517 - INFO - 
+📊 Analyzing GBP_JPY...
+2025-06-16 19:29:10,519 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_JPY/candles
+2025-06-16 19:29:10,642 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_JPY/candles
+2025-06-16 19:29:10,761 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_JPY/candles
+2025-06-16 19:29:11,029 - INFO - ⏸️ No trade signal for GBP_JPY
+2025-06-16 19:29:12,031 - INFO - 
+📊 Analyzing GBP_NZD...
+2025-06-16 19:29:12,032 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_NZD/candles
+2025-06-16 19:29:12,206 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_NZD/candles
+2025-06-16 19:29:12,346 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_NZD/candles
+2025-06-16 19:29:12,559 - INFO - ⏸️ No trade signal for GBP_NZD
+2025-06-16 19:29:13,562 - INFO - 
+📊 Analyzing GBP_SGD...
+2025-06-16 19:29:13,564 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_SGD/candles
+2025-06-16 19:29:13,678 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_SGD/candles
+2025-06-16 19:29:13,814 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_SGD/candles
+2025-06-16 19:29:13,947 - INFO - ⏸️ No trade signal for GBP_SGD
+2025-06-16 19:29:14,949 - INFO - 
+📊 Analyzing GBP_USD...
+2025-06-16 19:29:14,950 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:29:15,061 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:29:15,198 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:29:15,372 - INFO - ⏸️ No trade signal for GBP_USD
+2025-06-16 19:29:16,377 - INFO - 
+📊 Analyzing GBP_ZAR...
+2025-06-16 19:29:16,379 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_ZAR/candles
+2025-06-16 19:29:16,494 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_ZAR/candles
+2025-06-16 19:29:16,614 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_ZAR/candles
+2025-06-16 19:29:16,740 - INFO - ⏸️ No trade signal for GBP_ZAR
+2025-06-16 19:29:17,744 - INFO - 
+📊 Analyzing HKD_JPY...
+2025-06-16 19:29:17,746 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/HKD_JPY/candles
+2025-06-16 19:29:17,906 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/HKD_JPY/candles
+2025-06-16 19:29:18,013 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/HKD_JPY/candles
+2025-06-16 19:29:18,147 - INFO - ⏸️ No trade signal for HKD_JPY
+2025-06-16 19:29:19,149 - INFO - 
+📊 Analyzing NZD_CAD...
+2025-06-16 19:29:19,150 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_CAD/candles
+2025-06-16 19:29:19,276 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_CAD/candles
+2025-06-16 19:29:19,415 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_CAD/candles
+2025-06-16 19:29:19,550 - INFO - ⏸️ No trade signal for NZD_CAD
+2025-06-16 19:29:20,552 - INFO - 
+📊 Analyzing NZD_CHF...
+2025-06-16 19:29:20,554 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_CHF/candles
+2025-06-16 19:29:20,667 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_CHF/candles
+2025-06-16 19:29:20,813 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_CHF/candles
+2025-06-16 19:29:20,955 - INFO - ⏸️ No trade signal for NZD_CHF
+2025-06-16 19:29:21,957 - INFO - 
+📊 Analyzing NZD_HKD...
+2025-06-16 19:29:21,959 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_HKD/candles
+2025-06-16 19:29:22,066 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_HKD/candles
+2025-06-16 19:29:22,222 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_HKD/candles
+2025-06-16 19:29:22,403 - INFO - ⏸️ No trade signal for NZD_HKD
+2025-06-16 19:29:23,407 - INFO - 
+📊 Analyzing NZD_JPY...
+2025-06-16 19:29:23,409 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_JPY/candles
+2025-06-16 19:29:23,523 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_JPY/candles
+2025-06-16 19:29:23,631 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_JPY/candles
+2025-06-16 19:29:23,807 - INFO - ⏸️ No trade signal for NZD_JPY
+2025-06-16 19:29:24,809 - INFO - 
+📊 Analyzing NZD_SGD...
+2025-06-16 19:29:24,811 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_SGD/candles
+2025-06-16 19:29:24,926 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_SGD/candles
+2025-06-16 19:29:25,043 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_SGD/candles
+2025-06-16 19:29:25,188 - INFO - ⏸️ No trade signal for NZD_SGD
+2025-06-16 19:29:26,191 - INFO - 
+📊 Analyzing NZD_USD...
+2025-06-16 19:29:26,192 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_USD/candles
+2025-06-16 19:29:26,346 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_USD/candles
+2025-06-16 19:29:26,454 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/NZD_USD/candles
+2025-06-16 19:29:26,606 - INFO - ⏸️ No trade signal for NZD_USD
+2025-06-16 19:29:27,609 - INFO - 
+📊 Analyzing SGD_CHF...
+2025-06-16 19:29:27,610 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/SGD_CHF/candles
+2025-06-16 19:29:27,768 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/SGD_CHF/candles
+2025-06-16 19:29:27,875 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/SGD_CHF/candles
+2025-06-16 19:29:28,013 - INFO - ⏸️ No trade signal for SGD_CHF
+2025-06-16 19:29:29,015 - INFO - 
+📊 Analyzing SGD_JPY...
+2025-06-16 19:29:29,017 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/SGD_JPY/candles
+2025-06-16 19:29:29,152 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/SGD_JPY/candles
+2025-06-16 19:29:29,281 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/SGD_JPY/candles
+2025-06-16 19:29:29,407 - INFO - ⏸️ No trade signal for SGD_JPY
+2025-06-16 19:29:30,410 - INFO - 
+📊 Analyzing USD_CAD...
+2025-06-16 19:29:30,411 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:29:30,522 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:29:30,647 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:29:30,867 - INFO - ⏸️ No trade signal for USD_CAD
+2025-06-16 19:29:31,870 - INFO - 
+📊 Analyzing USD_CHF...
+2025-06-16 19:29:31,872 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CHF/candles
+2025-06-16 19:29:32,016 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CHF/candles
+2025-06-16 19:29:32,153 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CHF/candles
+2025-06-16 19:29:32,281 - INFO - ⏸️ No trade signal for USD_CHF
+2025-06-16 19:29:33,283 - INFO - 
+📊 Analyzing USD_CNH...
+2025-06-16 19:29:33,284 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CNH/candles
+2025-06-16 19:29:33,402 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CNH/candles
+2025-06-16 19:29:33,542 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CNH/candles
+2025-06-16 19:29:33,693 - INFO - ⏸️ No trade signal for USD_CNH
+2025-06-16 19:29:34,696 - INFO - 
+📊 Analyzing USD_HKD...
+2025-06-16 19:29:34,697 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_HKD/candles
+2025-06-16 19:29:34,966 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_HKD/candles
+2025-06-16 19:29:35,082 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_HKD/candles
+2025-06-16 19:29:35,246 - INFO - ⏸️ No trade signal for USD_HKD
+2025-06-16 19:29:36,257 - INFO - 
+📊 Analyzing USD_JPY...
+2025-06-16 19:29:36,259 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:29:36,374 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:29:36,490 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:29:36,618 - INFO - ⏸️ No trade signal for USD_JPY
+2025-06-16 19:29:37,620 - INFO - 
+📊 Analyzing USD_MXN...
+2025-06-16 19:29:37,622 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_MXN/candles
+2025-06-16 19:29:37,794 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_MXN/candles
+2025-06-16 19:29:37,920 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_MXN/candles
+2025-06-16 19:29:38,078 - INFO - ⏸️ No trade signal for USD_MXN
+2025-06-16 19:29:39,082 - INFO - 
+📊 Analyzing USD_NOK...
+2025-06-16 19:29:39,084 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_NOK/candles
+2025-06-16 19:29:39,302 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_NOK/candles
+2025-06-16 19:29:39,413 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_NOK/candles
+2025-06-16 19:29:39,569 - INFO - ⏸️ No trade signal for USD_NOK
+2025-06-16 19:29:40,571 - INFO - 
+📊 Analyzing USD_SGD...
+2025-06-16 19:29:40,573 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_SGD/candles
+2025-06-16 19:29:40,729 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_SGD/candles
+2025-06-16 19:29:40,866 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_SGD/candles
+2025-06-16 19:29:41,056 - INFO - ⏸️ No trade signal for USD_SGD
+2025-06-16 19:29:42,060 - INFO - 
+📊 Analyzing USD_THB...
+2025-06-16 19:29:42,062 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_THB/candles
+2025-06-16 19:29:42,213 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_THB/candles
+2025-06-16 19:29:42,323 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_THB/candles
+2025-06-16 19:29:42,447 - INFO - ⏸️ No trade signal for USD_THB
+2025-06-16 19:29:43,451 - INFO - 
+📊 Analyzing USD_ZAR...
+2025-06-16 19:29:43,453 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_ZAR/candles
+2025-06-16 19:29:43,566 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_ZAR/candles
+2025-06-16 19:29:43,851 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_ZAR/candles
+2025-06-16 19:29:44,034 - INFO - ⏸️ No trade signal for USD_ZAR
+2025-06-16 19:29:45,039 - INFO - 
+📊 Analyzing ZAR_JPY...
+2025-06-16 19:29:45,041 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/ZAR_JPY/candles
+2025-06-16 19:29:45,161 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/ZAR_JPY/candles
+2025-06-16 19:29:45,287 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/ZAR_JPY/candles
+2025-06-16 19:29:45,476 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:29:45,578 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/orders
+2025-06-16 19:29:45,685 - ERROR - request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/orders failed [400,{"orderRejectTransaction":{"id":"10120","accountID":"101-004-15208160-001","userID":15208160,"batchID":"10120","requestID":"115426851652654161","time":"2025-06-16T19:29:45.633398521Z","type":"MARKET_ORDER_REJECT","rejectReason":"TAKE_PROFIT_ON_FILL_PRICE_AND_DISTANCE_BOTH_MISSING","instrument":"ZAR_JPY","units":"50000","timeInForce":"FOK","positionFill":"DEFAULT","takeProfitOnFill":{"timeInForce":"GTC"},"stopLossOnFill":{"timeInForce":"GTC","triggerMode":"TOP_OF_BOOK"},"reason":"CLIENT_ORDER"},"relatedTransactionIDs":["10120"],"lastTransactionID":"10120","errorMessage":"The Take Profit on fill contains neither the price nor distance fields.","errorCode":"TAKE_PROFIT_ON_FILL_PRICE_AND_DISTANCE_BOTH_MISSING"}]
+2025-06-16 19:29:45,688 - INFO - ⏸️ No trade signal for ZAR_JPY
+2025-06-16 19:29:46,691 - INFO - 
+📋 TRADING JOB SUMMARY:
+2025-06-16 19:29:46,692 - INFO -    Duration: 78.5 seconds
+2025-06-16 19:29:46,693 - INFO -    Instruments Checked: 54
+2025-06-16 19:29:46,693 - INFO -    Trades Executed: 0
+2025-06-16 19:29:46,694 - INFO -    Errors: 0
+2025-06-16 19:29:46,694 - INFO - ✅ Trading job completed successfully
+
+2025-06-16 19:30:46,868 - INFO - 
+================================================================================
+2025-06-16 19:30:46,869 - INFO - 🔄 TRADING JOB STARTED - 2025-06-16 19:30:46
+2025-06-16 19:30:46,870 - INFO - ================================================================================
+2025-06-16 19:30:46,870 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:30:46,991 - INFO - 💰 Account Status:
+2025-06-16 19:30:46,992 - INFO -    Balance: $69,351.78
+2025-06-16 19:30:46,993 - INFO -    Open Positions: 0
+2025-06-16 19:30:46,993 - INFO - 🎯 Scanning 54 instruments: AUD_CAD, AUD_CHF, AUD_HKD, AUD_JPY, AUD_NZD, AUD_SGD, AUD_USD, CAD_CHF, CAD_HKD, CAD_JPY, CAD_SGD, CHF_HKD, CHF_JPY, CHF_ZAR, EUR_AUD, EUR_CAD, EUR_CHF, EUR_GBP, EUR_HKD, EUR_JPY, EUR_NOK, EUR_NZD, EUR_SGD, EUR_USD, EUR_ZAR, GBP_AUD, GBP_CAD, GBP_CHF, GBP_HKD, GBP_JPY, GBP_NZD, GBP_SGD, GBP_USD, GBP_ZAR, HKD_JPY, NZD_CAD, NZD_CHF, NZD_HKD, NZD_JPY, NZD_SGD, NZD_USD, SGD_CHF, SGD_JPY, USD_CAD, USD_CHF, USD_CNH, USD_HKD, USD_JPY, USD_MXN, USD_NOK, USD_SGD, USD_THB, USD_ZAR, ZAR_JPY
+2025-06-16 19:30:46,995 - INFO - 
+📊 Analyzing AUD_CAD...
+2025-06-16 19:30:46,998 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CAD/candles
+2025-06-16 19:30:47,126 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CAD/candles
+2025-06-16 19:30:47,276 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CAD/candles
+2025-06-16 19:30:47,452 - INFO - ⏸️ No trade signal for AUD_CAD
+2025-06-16 19:30:48,454 - INFO - 
+📊 Analyzing AUD_CHF...
+2025-06-16 19:30:48,456 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CHF/candles
+2025-06-16 19:30:48,664 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CHF/candles
+2025-06-16 19:30:48,856 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_CHF/candles
+2025-06-16 19:30:49,006 - INFO - ⏸️ No trade signal for AUD_CHF
+2025-06-16 19:30:50,010 - INFO - 
+📊 Analyzing AUD_HKD...
+2025-06-16 19:30:50,011 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_HKD/candles
+2025-06-16 19:30:50,139 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_HKD/candles
+2025-06-16 19:30:50,252 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_HKD/candles
+2025-06-16 19:30:50,417 - INFO - ⏸️ No trade signal for AUD_HKD
+2025-06-16 19:30:51,418 - INFO - 
+📊 Analyzing AUD_JPY...
+2025-06-16 19:30:51,420 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_JPY/candles
+2025-06-16 19:30:51,553 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_JPY/candles
+2025-06-16 19:30:51,674 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_JPY/candles
+2025-06-16 19:30:51,931 - INFO - ⏸️ No trade signal for AUD_JPY
+2025-06-16 19:30:52,933 - INFO - 
+📊 Analyzing AUD_NZD...
+2025-06-16 19:30:52,935 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_NZD/candles
+2025-06-16 19:30:53,045 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_NZD/candles
+2025-06-16 19:30:53,153 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_NZD/candles
+2025-06-16 19:30:53,292 - INFO - ⏸️ No trade signal for AUD_NZD
+2025-06-16 19:30:54,294 - INFO - 
+📊 Analyzing AUD_SGD...
+2025-06-16 19:30:54,295 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_SGD/candles
+2025-06-16 19:30:54,416 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_SGD/candles
+2025-06-16 19:30:54,531 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_SGD/candles
+2025-06-16 19:30:54,719 - INFO - ⏸️ No trade signal for AUD_SGD
+2025-06-16 19:30:55,720 - INFO - 
+📊 Analyzing AUD_USD...
+2025-06-16 19:30:55,723 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:30:55,848 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:30:55,961 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:30:56,172 - INFO - ⏸️ No trade signal for AUD_USD
+2025-06-16 19:30:57,174 - INFO - 
+📊 Analyzing CAD_CHF...
+2025-06-16 19:30:57,175 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_CHF/candles
+2025-06-16 19:30:57,295 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_CHF/candles
+2025-06-16 19:30:57,411 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_CHF/candles
+2025-06-16 19:30:57,582 - INFO - ⏸️ No trade signal for CAD_CHF
+2025-06-16 19:30:58,583 - INFO - 
+📊 Analyzing CAD_HKD...
+2025-06-16 19:30:58,585 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_HKD/candles
+2025-06-16 19:30:58,708 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_HKD/candles
+2025-06-16 19:30:58,832 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_HKD/candles
+2025-06-16 19:30:58,992 - INFO - ⏸️ No trade signal for CAD_HKD
+2025-06-16 19:30:59,994 - INFO - 
+📊 Analyzing CAD_JPY...
+2025-06-16 19:30:59,996 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_JPY/candles
+2025-06-16 19:31:00,112 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_JPY/candles
+2025-06-16 19:31:00,225 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_JPY/candles
+2025-06-16 19:31:00,389 - INFO - ⏸️ No trade signal for CAD_JPY
+2025-06-16 19:31:01,391 - INFO - 
+📊 Analyzing CAD_SGD...
+2025-06-16 19:31:01,393 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_SGD/candles
+2025-06-16 19:31:01,518 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_SGD/candles
+2025-06-16 19:31:01,632 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CAD_SGD/candles
+2025-06-16 19:31:01,806 - INFO - ⏸️ No trade signal for CAD_SGD
+2025-06-16 19:31:02,807 - INFO - 
+📊 Analyzing CHF_HKD...
+2025-06-16 19:31:02,809 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_HKD/candles
+2025-06-16 19:31:02,923 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_HKD/candles
+2025-06-16 19:31:03,028 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_HKD/candles
+2025-06-16 19:31:03,157 - INFO - ⏸️ No trade signal for CHF_HKD
+2025-06-16 19:31:04,160 - INFO - 
+📊 Analyzing CHF_JPY...
+2025-06-16 19:31:04,162 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_JPY/candles
+2025-06-16 19:31:04,278 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_JPY/candles
+2025-06-16 19:31:04,386 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_JPY/candles
+2025-06-16 19:31:04,580 - INFO - ⏸️ No trade signal for CHF_JPY
+2025-06-16 19:31:05,584 - INFO - 
+📊 Analyzing CHF_ZAR...
+2025-06-16 19:31:05,585 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_ZAR/candles
+2025-06-16 19:31:05,696 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_ZAR/candles
+2025-06-16 19:31:05,805 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/CHF_ZAR/candles
+2025-06-16 19:31:05,957 - INFO - ⏸️ No trade signal for CHF_ZAR
+2025-06-16 19:31:06,959 - INFO - 
+📊 Analyzing EUR_AUD...
+2025-06-16 19:31:06,960 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_AUD/candles
+2025-06-16 19:31:07,067 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_AUD/candles
+2025-06-16 19:31:07,178 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_AUD/candles
+2025-06-16 19:31:07,335 - INFO - ⏸️ No trade signal for EUR_AUD
+2025-06-16 19:31:08,340 - INFO - 
+📊 Analyzing EUR_CAD...
+2025-06-16 19:31:08,342 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CAD/candles
+2025-06-16 19:31:08,454 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CAD/candles
+2025-06-16 19:31:08,577 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CAD/candles
+2025-06-16 19:31:08,704 - INFO - ⏸️ No trade signal for EUR_CAD
+2025-06-16 19:31:09,711 - INFO - 
+📊 Analyzing EUR_CHF...
+2025-06-16 19:31:09,713 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CHF/candles
+2025-06-16 19:31:09,881 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CHF/candles
+2025-06-16 19:31:10,112 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_CHF/candles
+2025-06-16 19:31:10,246 - INFO - ⏸️ No trade signal for EUR_CHF
+2025-06-16 19:31:11,248 - INFO - 
+📊 Analyzing EUR_GBP...
+2025-06-16 19:31:11,249 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_GBP/candles
+2025-06-16 19:31:11,507 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_GBP/candles
+2025-06-16 19:31:11,638 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_GBP/candles
+2025-06-16 19:31:11,773 - INFO - ⏸️ No trade signal for EUR_GBP
+2025-06-16 19:31:12,783 - INFO - 
+📊 Analyzing EUR_HKD...
+2025-06-16 19:31:12,785 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_HKD/candles
+2025-06-16 19:31:12,955 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_HKD/candles
+2025-06-16 19:31:13,072 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_HKD/candles
+2025-06-16 19:31:13,227 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:31:13,330 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/orders
+2025-06-16 19:31:13,435 - ERROR - request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/orders failed [400,{"orderRejectTransaction":{"id":"10121","accountID":"101-004-15208160-001","userID":15208160,"batchID":"10121","requestID":"115426852021815248","time":"2025-06-16T19:31:13.387528823Z","type":"MARKET_ORDER_REJECT","rejectReason":"TAKE_PROFIT_ON_FILL_PRICE_AND_DISTANCE_BOTH_MISSING","instrument":"EUR_HKD","units":"50000","timeInForce":"FOK","positionFill":"DEFAULT","takeProfitOnFill":{"timeInForce":"GTC"},"stopLossOnFill":{"timeInForce":"GTC","triggerMode":"TOP_OF_BOOK"},"reason":"CLIENT_ORDER"},"relatedTransactionIDs":["10121"],"lastTransactionID":"10121","errorMessage":"The Take Profit on fill contains neither the price nor distance fields.","errorCode":"TAKE_PROFIT_ON_FILL_PRICE_AND_DISTANCE_BOTH_MISSING"}]
+2025-06-16 19:31:13,436 - INFO - ⏸️ No trade signal for EUR_HKD
+2025-06-16 19:31:14,439 - INFO - 
+📊 Analyzing EUR_JPY...
+2025-06-16 19:31:14,441 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_JPY/candles
+2025-06-16 19:31:14,563 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_JPY/candles
+2025-06-16 19:31:14,691 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_JPY/candles
+2025-06-16 19:31:14,813 - INFO - ⏸️ No trade signal for EUR_JPY
+2025-06-16 19:31:15,815 - INFO - 
+📊 Analyzing EUR_NOK...
+2025-06-16 19:31:15,816 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NOK/candles
+2025-06-16 19:31:15,980 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NOK/candles
+2025-06-16 19:31:16,094 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NOK/candles
+2025-06-16 19:31:16,258 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:31:16,363 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/orders
+2025-06-16 19:31:16,481 - ERROR - request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/orders failed [400,{"orderRejectTransaction":{"id":"10122","accountID":"101-004-15208160-001","userID":15208160,"batchID":"10122","requestID":"115426852034400146","time":"2025-06-16T19:31:16.429483535Z","type":"MARKET_ORDER_REJECT","rejectReason":"TAKE_PROFIT_ON_FILL_PRICE_AND_DISTANCE_BOTH_MISSING","instrument":"EUR_NOK","units":"50000","timeInForce":"FOK","positionFill":"DEFAULT","takeProfitOnFill":{"timeInForce":"GTC"},"stopLossOnFill":{"timeInForce":"GTC","triggerMode":"TOP_OF_BOOK"},"reason":"CLIENT_ORDER"},"relatedTransactionIDs":["10122"],"lastTransactionID":"10122","errorMessage":"The Take Profit on fill contains neither the price nor distance fields.","errorCode":"TAKE_PROFIT_ON_FILL_PRICE_AND_DISTANCE_BOTH_MISSING"}]
+2025-06-16 19:31:16,482 - INFO - ⏸️ No trade signal for EUR_NOK
+2025-06-16 19:31:17,487 - INFO - 
+📊 Analyzing EUR_NZD...
+2025-06-16 19:31:17,488 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:31:17,598 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:31:17,710 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_NZD/candles
+2025-06-16 19:31:17,883 - INFO - ⏸️ No trade signal for EUR_NZD
+2025-06-16 19:31:18,887 - INFO - 
+📊 Analyzing EUR_SGD...
+2025-06-16 19:31:18,889 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:31:19,001 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:31:19,117 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_SGD/candles
+2025-06-16 19:31:19,253 - INFO - ⏸️ No trade signal for EUR_SGD
+2025-06-16 19:31:20,254 - INFO - 
+📊 Analyzing EUR_USD...
+2025-06-16 19:31:20,256 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:31:20,473 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:31:20,579 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:31:20,761 - INFO - ⏸️ No trade signal for EUR_USD
+2025-06-16 19:31:21,767 - INFO - 
+📊 Analyzing EUR_ZAR...
+2025-06-16 19:31:21,769 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:31:21,999 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:31:22,103 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_ZAR/candles
+2025-06-16 19:31:22,235 - INFO - ⏸️ No trade signal for EUR_ZAR
+2025-06-16 19:31:23,242 - INFO - 
+📊 Analyzing GBP_AUD...
+2025-06-16 19:31:23,243 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:31:23,395 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:31:23,497 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_AUD/candles
+2025-06-16 19:31:23,620 - INFO - ⏸️ No trade signal for GBP_AUD
+2025-06-16 19:31:24,624 - INFO - 
+📊 Analyzing GBP_CAD...
+2025-06-16 19:31:24,626 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:31:24,734 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:31:24,850 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CAD/candles
+2025-06-16 19:31:25,004 - INFO - ⏸️ No trade signal for GBP_CAD
+2025-06-16 19:31:26,008 - INFO - 
+📊 Analyzing GBP_CHF...
+2025-06-16 19:31:26,010 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CHF/candles
+2025-06-16 19:31:26,202 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CHF/candles
+2025-06-16 19:31:26,343 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_CHF/candles
+2025-06-16 19:31:26,465 - INFO - ⏸️ No trade signal for GBP_CHF
+2025-06-16 19:31:27,467 - INFO - 
+📊 Analyzing GBP_HKD...
+2025-06-16 19:31:27,469 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_HKD/candles
+2025-06-16 19:31:27,590 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_HKD/candles
+2025-06-16 19:31:27,735 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_HKD/candles
+2025-06-16 19:31:27,906 - INFO - ⏸️ No trade signal for GBP_HKD
+2025-06-16 19:31:28,907 - INFO - 
+📊 Analyzing GBP_JPY...
+2025-06-16 19:31:28,909 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_JPY/candles
+2025-06-16 19:31:29,036 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_JPY/candles
+2025-06-16 19:31:29,168 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_JPY/candles
+2025-06-16 19:31:29,305 - INFO - ⏸️ No trade signal for GBP_JPY

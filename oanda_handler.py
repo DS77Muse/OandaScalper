@@ -130,11 +130,11 @@ def place_market_order(client, instrument, units, stop_loss_price=None, take_pro
         
         # Add stop loss if provided
         if stop_loss_price is not None:
-            order_data["stopLossOnFill"] = StopLossDetails(price=stop_loss_price).__dict__
+            order_data["stopLossOnFill"] = StopLossDetails(price=stop_loss_price)
         
         # Add take profit if provided
         if take_profit_price is not None:
-            order_data["takeProfitOnFill"] = TakeProfitDetails(price=take_profit_price).__dict__
+            order_data["takeProfitOnFill"] = TakeProfitDetails(price=take_profit_price)
         
         # Create order request
         order_request = MarketOrderRequest(**order_data)
