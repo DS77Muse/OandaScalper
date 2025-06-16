@@ -1,3 +1,5 @@
 oandapyV20
 pandas
 python-dotenv
+scipy
+numpy
