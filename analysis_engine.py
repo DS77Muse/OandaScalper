@@ -553,6 +553,102 @@ def detect_ob_manually(df: pd.DataFrame) -> List[Dict[str, Any]]:
     
     return ob_list
 
+def confirm_m1_reversal_signal(df: pd.DataFrame) -> Optional[str]:
+    """
+    Confirm M1 reversal signal by analyzing the most recent completed candle.
+    
+    This function looks for strong reversal patterns in the latest M1 candle
+    to confirm entry signals for the range-bound strategy.
+    
+    Args:
+        df (pd.DataFrame): M1 OHLC data with columns: open, high, low, close
+    
+    Returns:
+        str or None: 'Bullish Reversal', 'Bearish Reversal', or None
+    """
+    try:
+        if len(df) < 3:
+            return None
+        
+        # Get the last completed candle
+        current_candle = df.iloc[-1]
+        prev_candle = df.iloc[-2]
+        
+        # Calculate candle properties
+        current_open = current_candle['open']
+        current_close = current_candle['close']
+        current_high = current_candle['high']
+        current_low = current_candle['low']
+        
+        prev_open = prev_candle['open']
+        prev_close = prev_candle['close']
+        prev_high = prev_candle['high']
+        prev_low = prev_candle['low']
+        
+        # Calculate current candle body and range
+        current_body = abs(current_close - current_open)
+        current_range = current_high - current_low
+        prev_body = abs(prev_close - prev_open)
+        
+        # Skip analysis if candle range is zero (shouldn't happen but safety check)
+        if current_range == 0 or prev_body == 0:
+            return None
+        
+        # BULLISH REVERSAL CONDITIONS
+        if current_close > current_open:  # Current candle is green/bullish
+            
+            # Condition 1: Strong bullish body (> 60% of total range)
+            body_strength = current_body / current_range
+            
+            # Condition 2: Small upper wick (< 30% of range)
+            upper_wick = current_high - current_close
+            upper_wick_ratio = upper_wick / current_range
+            
+            # Condition 3: Current body is larger than previous body (momentum increase)
+            body_increase = current_body > prev_body
+            
+            # Condition 4: Lower wick shows rejection (> 20% of range)
+            lower_wick = current_open - current_low
+            lower_wick_ratio = lower_wick / current_range
+            
+            # Check all bullish conditions
+            if (body_strength > 0.6 and 
+                upper_wick_ratio < 0.3 and 
+                body_increase and 
+                lower_wick_ratio > 0.2):
+                return 'Bullish Reversal'
+        
+        # BEARISH REVERSAL CONDITIONS  
+        elif current_close < current_open:  # Current candle is red/bearish
+            
+            # Condition 1: Strong bearish body (> 60% of total range)
+            body_strength = current_body / current_range
+            
+            # Condition 2: Small lower wick (< 30% of range)
+            lower_wick = current_close - current_low
+            lower_wick_ratio = lower_wick / current_range
+            
+            # Condition 3: Current body is larger than previous body (momentum increase)
+            body_increase = current_body > prev_body
+            
+            # Condition 4: Upper wick shows rejection (> 20% of range)
+            upper_wick = current_high - current_open
+            upper_wick_ratio = upper_wick / current_range
+            
+            # Check all bearish conditions
+            if (body_strength > 0.6 and 
+                lower_wick_ratio < 0.3 and 
+                body_increase and 
+                upper_wick_ratio > 0.2):
+                return 'Bearish Reversal'
+        
+        # No clear reversal signal detected
+        return None
+        
+    except Exception as e:
+        print(f"✗ Error in M1 reversal signal confirmation: {e}")
+        return None
+
 def check_for_liquidity_grab(df: pd.DataFrame, key_level: float, tolerance: float = 0.0005) -> bool:
     """
     Check for liquidity grab around a key level (support/resistance).
@@ -719,6 +815,14 @@ def test_analysis_functions():
                 print("  No supply zones available for liquidity grab test")
         else:
             print("  No zones available for liquidity grab test")
+        
+        # Test 6: M1 Reversal Signal Detection
+        print("\n6. Testing M1 reversal signal detection...")
+        reversal_signal = confirm_m1_reversal_signal(df)
+        if reversal_signal:
+            print(f"  M1 Reversal Signal: {reversal_signal}")
+        else:
+            print("  No M1 reversal signal detected")
         
         print("\n✓ All analysis engine tests completed successfully!")
         

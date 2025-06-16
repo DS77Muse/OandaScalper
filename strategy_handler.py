@@ -19,21 +19,21 @@ from analysis_engine import (
     find_supply_demand_zones, 
     get_current_price_context,
     identify_fvg_and_ob,
-    check_for_liquidity_grab
+    check_for_liquidity_grab,
+    confirm_m1_reversal_signal
 )
 from journal import log_new_trade, get_open_trades
 
 def run_strategy_check(client, instrument: str) -> bool:
     """
-    Main strategy function that performs multi-timeframe analysis and executes trades.
+    Main strategy function with DUAL-MODE logic for maximum trade frequency.
     
-    This function implements a confluence-based trading approach:
-    1. Higher timeframe (M15) provides market context/bias
-    2. Medium timeframe (M5) identifies key supply/demand zones  
-    3. Lower timeframe (M1) provides precise entry signals
-    4. ICT concepts (FVG, Order Blocks) add confluence
-    5. Risk management determines position sizing
-    6. Trade execution with linked SL/TP
+    DUAL-MODE STRATEGY:
+    MODE A (Trend-Following): When M15 is trending, seeks high-confluence pullback entries
+    MODE B (Range-Bound): When M15 is ranging, seeks mean-reversion at strong M5 zones
+    
+    This approach ensures the bot trades during BOTH trending and consolidation periods,
+    dramatically increasing trade frequency while maintaining quality signals.
     
     Args:
         client: Authenticated OANDA API client
@@ -44,7 +44,7 @@ def run_strategy_check(client, instrument: str) -> bool:
     """
     try:
         print(f"\n{'='*60}")
-        print(f"STRATEGY CHECK: {instrument}")
+        print(f"DUAL-MODE STRATEGY CHECK: {instrument}")
         print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"{'='*60}")
         
@@ -77,32 +77,21 @@ def run_strategy_check(client, instrument: str) -> bool:
         print(f"  M1:  {len(df_m1)} candles")
         
         # ==================================================================
-        # STEP 2: MULTI-TIMEFRAME ANALYSIS
+        # STEP 2: MARKET CONTEXT ANALYSIS
         # ==================================================================
-        print("\n🔍 STEP 2: Multi-timeframe analysis...")
+        print("\n🔍 STEP 2: Market context determination...")
         
-        # M15 Context Analysis - Determine overall market bias
-        market_context = identify_market_structure(df_m15, lookback_period=50)
-        print(f"✓ M15 Market Context: {market_context}")
+        # M15 Context Analysis - This determines our strategy mode
+        context = identify_market_structure(df_m15, lookback_period=50)
+        print(f"✓ M15 Market Context: {context}")
         
-        # M5 Zone Analysis - Identify key supply/demand levels
+        # M5 Zone Analysis - Critical for both modes
         zones_m5 = find_supply_demand_zones(df_m5, lookback=20, strength_factor=1.5)
         print(f"✓ M5 Supply/Demand Zones: {len(zones_m5)} zones identified")
         
-        # M1 ICT Analysis - Find FVGs and Order Blocks
-        fvg_list, ob_list = identify_fvg_and_ob(df_m1)
-        print(f"✓ M1 ICT Analysis: {len(fvg_list)} FVGs, {len(ob_list)} Order Blocks")
-        
-        # Current price context
+        # Current price and context
         current_price = df_m1['close'].iloc[-1]
-        price_context = get_current_price_context(df_m5, zones_m5, current_price)
         print(f"✓ Current Price: {current_price:.5f}")
-        print(f"✓ Price Context: {price_context['price_context']}")
-        
-        # ==================================================================
-        # STEP 3: CONFLUENCE-BASED ENTRY LOGIC
-        # ==================================================================
-        print("\n⚡ STEP 3: Confluence-based entry analysis...")
         
         # Check for existing open trades to avoid over-exposure
         open_trades = get_open_trades('trading_journal.db')
@@ -112,35 +101,27 @@ def run_strategy_check(client, instrument: str) -> bool:
             print(f"⚠ Skipping {instrument} - {len(instrument_open_trades)} open trade(s) already exist")
             return False
         
-        # Analyze long trade opportunity
-        long_signal = analyze_long_opportunity(
-            market_context, price_context, zones_m5, fvg_list, ob_list, df_m1, current_price
-        )
-        
-        # Analyze short trade opportunity  
-        short_signal = analyze_short_opportunity(
-            market_context, price_context, zones_m5, fvg_list, ob_list, df_m1, current_price
-        )
-        
         # ==================================================================
-        # STEP 4: TRADE EXECUTION
+        # STEP 3: DUAL-MODE STRATEGY LOGIC
         # ==================================================================
-        if long_signal['valid']:
-            print(f"\n🚀 LONG SIGNAL DETECTED!")
-            return execute_trade(client, instrument, 'LONG', long_signal, df_m1)
+        print(f"\n⚡ STEP 3: Dual-mode strategy execution...")
+        
+        # TREND-FOLLOWING MODE (Original high-confluence strategy)
+        if context == 'Uptrend':
+            print("📈 Strategy Mode: Trend-Following (Long)")
+            return execute_trend_following_long(client, instrument, zones_m5, df_m1, current_price)
             
-        elif short_signal['valid']:
-            print(f"\n🚀 SHORT SIGNAL DETECTED!")
-            return execute_trade(client, instrument, 'SHORT', short_signal, df_m1)
+        elif context == 'Downtrend':
+            print("📉 Strategy Mode: Trend-Following (Short)")
+            return execute_trend_following_short(client, instrument, zones_m5, df_m1, current_price)
+            
+        # RANGE-BOUND MODE (New mean-reversion strategy)
+        elif context == 'Range':
+            print("🔄 Strategy Mode: Range-Bound Reversal")
+            return execute_range_bound_strategy(client, instrument, zones_m5, df_m1, current_price)
             
         else:
-            print(f"\n⏳ No valid signals found for {instrument}")
-            if long_signal['reasons'] or short_signal['reasons']:
-                print("📋 Analysis summary:")
-                if long_signal['reasons']:
-                    print(f"  Long blocked: {', '.join(long_signal['reasons'])}")
-                if short_signal['reasons']:
-                    print(f"  Short blocked: {', '.join(short_signal['reasons'])}")
+            print(f"❓ Unknown market context: {context}")
             return False
             
     except Exception as e:
@@ -148,275 +129,255 @@ def run_strategy_check(client, instrument: str) -> bool:
         print(f"📋 Full traceback:\n{traceback.format_exc()}")
         return False
 
-def analyze_long_opportunity(
-    market_context: str, 
-    price_context: Dict, 
-    zones: List[Dict], 
-    fvg_list: List[Dict], 
-    ob_list: List[Dict],
-    df_m1: pd.DataFrame,
-    current_price: float
-) -> Dict[str, Any]:
+def execute_trend_following_long(client, instrument: str, zones_m5: List[Dict], df_m1: pd.DataFrame, current_price: float) -> bool:
     """
-    Analyze conditions for a long trade opportunity using confluence.
+    Execute the original high-confluence trend-following long strategy.
     
-    Long Trade Requirements (ALL must be met):
-    1. M15 context must be 'Uptrend' 
-    2. Current price near or inside a demand zone (M5)
-    3. Recent bullish FVG or Order Block formed (M1)
-    4. Optional: Recent liquidity grab below key level
-    
-    Returns:
-        Dict with 'valid' boolean and supporting 'reasons' list
+    Requirements:
+    1. M15 context is 'Uptrend' (already confirmed)
+    2. Current price near demand zone (M5)
+    3. Recent bullish FVG or Order Block (M1) 
+    4. Strong bullish M1 momentum confirmation
     """
-    signal = {'valid': False, 'reasons': [], 'confidence': 0, 'entry_reason': ''}
-    
     try:
-        # Requirement 1: M15 Context Filter
-        if market_context != 'Uptrend':
-            signal['reasons'].append(f"M15 context is {market_context}, not Uptrend")
-            return signal
+        print("\n🔍 Analyzing trend-following LONG opportunity...")
         
-        signal['confidence'] += 25
-        
-        # Requirement 2: Demand Zone Proximity  
-        demand_zones = [z for z in zones if z['type'] == 'demand']
-        
+        # Get demand zones
+        demand_zones = [z for z in zones_m5 if z['type'] == 'demand']
         if not demand_zones:
-            signal['reasons'].append("No demand zones available")
-            return signal
+            print("❌ No demand zones available for trend-following long")
+            return False
         
-        # Check if price is near any demand zone (within 0.2%)
+        # Check if price is near any strong demand zone (within 0.2%)
         near_demand = False
         target_zone = None
         
         for zone in demand_zones:
-            zone_price = zone['price_level']
-            distance_pct = abs(current_price - zone_price) / current_price * 100
-            
-            # Price should be at or slightly above demand zone
-            if current_price >= zone_price * 0.999 and distance_pct <= 0.2:
+            distance_pct = abs(current_price - zone['price_level']) / current_price * 100
+            if current_price >= zone['price_level'] * 0.999 and distance_pct <= 0.2:
                 near_demand = True
                 target_zone = zone
+                print(f"✅ Price near demand zone at {zone['price_level']:.5f} (strength: {zone['strength']:.2f})")
                 break
         
         if not near_demand:
             nearest_demand = min(demand_zones, key=lambda z: abs(z['price_level'] - current_price))
             distance = abs(current_price - nearest_demand['price_level']) / current_price * 100
-            signal['reasons'].append(f"Not near demand zone (nearest: {distance:.2f}% away)")
-            return signal
+            print(f"❌ Not near demand zone (nearest: {distance:.2f}% away)")
+            return False
         
-        signal['confidence'] += 25
+        # Get ICT analysis for confluence
+        fvg_list, ob_list = identify_fvg_and_ob(df_m1)
         
-        # Requirement 3: Recent Bullish ICT Pattern
-        recent_bullish_fvg = False
-        recent_bullish_ob = False
+        # Check for recent bullish ICT patterns
+        recent_bullish_confluence = False
+        confluence_reason = ""
         
-        # Check for recent bullish FVGs (last 10 candles)
+        # Check bullish FVGs
         recent_fvgs = [fvg for fvg in fvg_list if fvg['type'] == 'bullish']
-        if recent_fvgs:
-            # Check if current price is in or near any unfilled bullish FVG
-            for fvg in recent_fvgs[-3:]:  # Last 3 FVGs
-                if (current_price >= fvg['lower_level'] and 
-                    current_price <= fvg['upper_level'] * 1.001):
-                    recent_bullish_fvg = True
-                    break
+        for fvg in recent_fvgs[-3:]:
+            if (current_price >= fvg['lower_level'] and current_price <= fvg['upper_level'] * 1.001):
+                recent_bullish_confluence = True
+                confluence_reason += "Bullish FVG + "
+                break
         
-        # Check for recent bullish Order Blocks
+        # Check bullish Order Blocks
         recent_obs = [ob for ob in ob_list if ob['type'] == 'bullish']
-        if recent_obs:
-            # Check if current price is in or near any active bullish OB
-            for ob in recent_obs[-3:]:  # Last 3 OBs
-                if (current_price >= ob['zone_low'] and 
-                    current_price <= ob['zone_high'] * 1.001):
-                    recent_bullish_ob = True
-                    break
+        for ob in recent_obs[-3:]:
+            if (current_price >= ob['zone_low'] and current_price <= ob['zone_high'] * 1.001):
+                recent_bullish_confluence = True
+                confluence_reason += "Bullish OB + "
+                break
         
-        if not (recent_bullish_fvg or recent_bullish_ob):
-            signal['reasons'].append("No recent bullish FVG or Order Block")
-            return signal
+        if not recent_bullish_confluence:
+            print("❌ No recent bullish FVG or Order Block confluence")
+            return False
         
-        signal['confidence'] += 30
-        
-        # Requirement 4: Confirmation via price action
+        # Look for bullish momentum confirmation
         recent_candles = df_m1.tail(3)
         bullish_momentum = False
         
-        # Look for bullish momentum (recent green candles or bullish engulfing)
         for _, candle in recent_candles.iterrows():
-            if candle['close'] > candle['open']:  # Bullish candle
+            if candle['close'] > candle['open']:
                 body_size = candle['close'] - candle['open']
                 candle_range = candle['high'] - candle['low']
-                
-                # Strong bullish candle (body > 60% of range)
                 if candle_range > 0 and body_size / candle_range > 0.6:
                     bullish_momentum = True
                     break
         
-        if bullish_momentum:
-            signal['confidence'] += 20
+        if not bullish_momentum:
+            print("❌ No strong bullish momentum confirmation")
+            return False
         
-        # Bonus: Check for liquidity grab (adds confidence but not required)
-        if target_zone:
-            liquidity_grab = check_for_liquidity_grab(df_m1, target_zone['low_price'])
-            if liquidity_grab:
-                signal['confidence'] += 10
-                signal['entry_reason'] += "Liquidity grab + "
+        confluence_reason += "Trend-following + Demand zone + Bullish momentum"
+        print(f"✅ High-confluence LONG signal confirmed!")
+        print(f"📋 Entry reason: {confluence_reason}")
         
-        # Decision threshold: Need at least 70% confidence for valid signal
-        if signal['confidence'] >= 70:
-            signal['valid'] = True
-            signal['entry_reason'] += f"M15 uptrend + Demand zone + "
-            if recent_bullish_fvg:
-                signal['entry_reason'] += "Bullish FVG + "
-            if recent_bullish_ob:
-                signal['entry_reason'] += "Bullish OB + "
-            if bullish_momentum:
-                signal['entry_reason'] += "Bullish momentum"
-            
-            signal['entry_reason'] = signal['entry_reason'].rstrip(' + ')
-        else:
-            signal['reasons'].append(f"Insufficient confluence (confidence: {signal['confidence']}%)")
-        
-        return signal
+        # Execute the trade
+        signal = {'entry_reason': confluence_reason, 'confidence': 85}
+        return execute_trade(client, instrument, 'LONG', signal, df_m1)
         
     except Exception as e:
-        signal['reasons'].append(f"Analysis error: {e}")
-        return signal
+        print(f"❌ Error in trend-following long analysis: {e}")
+        return False
 
-def analyze_short_opportunity(
-    market_context: str,
-    price_context: Dict,
-    zones: List[Dict],
-    fvg_list: List[Dict],
-    ob_list: List[Dict],
-    df_m1: pd.DataFrame,
-    current_price: float
-) -> Dict[str, Any]:
+def execute_trend_following_short(client, instrument: str, zones_m5: List[Dict], df_m1: pd.DataFrame, current_price: float) -> bool:
     """
-    Analyze conditions for a short trade opportunity using confluence.
+    Execute the original high-confluence trend-following short strategy.
     
-    Short Trade Requirements (ALL must be met):
-    1. M15 context must be 'Downtrend'
-    2. Current price near or inside a supply zone (M5)  
-    3. Recent bearish FVG or Order Block formed (M1)
-    4. Optional: Recent liquidity grab above key level
-    
-    Returns:
-        Dict with 'valid' boolean and supporting 'reasons' list
+    Requirements:
+    1. M15 context is 'Downtrend' (already confirmed)
+    2. Current price near supply zone (M5)
+    3. Recent bearish FVG or Order Block (M1)
+    4. Strong bearish M1 momentum confirmation
     """
-    signal = {'valid': False, 'reasons': [], 'confidence': 0, 'entry_reason': ''}
-    
     try:
-        # Requirement 1: M15 Context Filter
-        if market_context != 'Downtrend':
-            signal['reasons'].append(f"M15 context is {market_context}, not Downtrend")
-            return signal
+        print("\n🔍 Analyzing trend-following SHORT opportunity...")
         
-        signal['confidence'] += 25
-        
-        # Requirement 2: Supply Zone Proximity
-        supply_zones = [z for z in zones if z['type'] == 'supply']
-        
+        # Get supply zones
+        supply_zones = [z for z in zones_m5 if z['type'] == 'supply']
         if not supply_zones:
-            signal['reasons'].append("No supply zones available")
-            return signal
+            print("❌ No supply zones available for trend-following short")
+            return False
         
-        # Check if price is near any supply zone (within 0.2%)
+        # Check if price is near any strong supply zone (within 0.2%)
         near_supply = False
         target_zone = None
         
         for zone in supply_zones:
-            zone_price = zone['price_level']
-            distance_pct = abs(current_price - zone_price) / current_price * 100
-            
-            # Price should be at or slightly below supply zone
-            if current_price <= zone_price * 1.001 and distance_pct <= 0.2:
+            distance_pct = abs(current_price - zone['price_level']) / current_price * 100
+            if current_price <= zone['price_level'] * 1.001 and distance_pct <= 0.2:
                 near_supply = True
                 target_zone = zone
+                print(f"✅ Price near supply zone at {zone['price_level']:.5f} (strength: {zone['strength']:.2f})")
                 break
         
         if not near_supply:
             nearest_supply = min(supply_zones, key=lambda z: abs(z['price_level'] - current_price))
             distance = abs(current_price - nearest_supply['price_level']) / current_price * 100
-            signal['reasons'].append(f"Not near supply zone (nearest: {distance:.2f}% away)")
-            return signal
+            print(f"❌ Not near supply zone (nearest: {distance:.2f}% away)")
+            return False
         
-        signal['confidence'] += 25
+        # Get ICT analysis for confluence
+        fvg_list, ob_list = identify_fvg_and_ob(df_m1)
         
-        # Requirement 3: Recent Bearish ICT Pattern
-        recent_bearish_fvg = False
-        recent_bearish_ob = False
+        # Check for recent bearish ICT patterns
+        recent_bearish_confluence = False
+        confluence_reason = ""
         
-        # Check for recent bearish FVGs
+        # Check bearish FVGs
         recent_fvgs = [fvg for fvg in fvg_list if fvg['type'] == 'bearish']
-        if recent_fvgs:
-            for fvg in recent_fvgs[-3:]:  # Last 3 FVGs
-                if (current_price <= fvg['upper_level'] and 
-                    current_price >= fvg['lower_level'] * 0.999):
-                    recent_bearish_fvg = True
-                    break
+        for fvg in recent_fvgs[-3:]:
+            if (current_price <= fvg['upper_level'] and current_price >= fvg['lower_level'] * 0.999):
+                recent_bearish_confluence = True
+                confluence_reason += "Bearish FVG + "
+                break
         
-        # Check for recent bearish Order Blocks
+        # Check bearish Order Blocks
         recent_obs = [ob for ob in ob_list if ob['type'] == 'bearish']
-        if recent_obs:
-            for ob in recent_obs[-3:]:  # Last 3 OBs
-                if (current_price <= ob['zone_high'] and 
-                    current_price >= ob['zone_low'] * 0.999):
-                    recent_bearish_ob = True
-                    break
+        for ob in recent_obs[-3:]:
+            if (current_price <= ob['zone_high'] and current_price >= ob['zone_low'] * 0.999):
+                recent_bearish_confluence = True
+                confluence_reason += "Bearish OB + "
+                break
         
-        if not (recent_bearish_fvg or recent_bearish_ob):
-            signal['reasons'].append("No recent bearish FVG or Order Block")
-            return signal
+        if not recent_bearish_confluence:
+            print("❌ No recent bearish FVG or Order Block confluence")
+            return False
         
-        signal['confidence'] += 30
-        
-        # Requirement 4: Confirmation via price action
+        # Look for bearish momentum confirmation
         recent_candles = df_m1.tail(3)
         bearish_momentum = False
         
-        # Look for bearish momentum
         for _, candle in recent_candles.iterrows():
-            if candle['close'] < candle['open']:  # Bearish candle
+            if candle['close'] < candle['open']:
                 body_size = candle['open'] - candle['close']
                 candle_range = candle['high'] - candle['low']
-                
-                # Strong bearish candle
                 if candle_range > 0 and body_size / candle_range > 0.6:
                     bearish_momentum = True
                     break
         
-        if bearish_momentum:
-            signal['confidence'] += 20
+        if not bearish_momentum:
+            print("❌ No strong bearish momentum confirmation")
+            return False
         
-        # Bonus: Check for liquidity grab
-        if target_zone:
-            liquidity_grab = check_for_liquidity_grab(df_m1, target_zone['high_price'])
-            if liquidity_grab:
-                signal['confidence'] += 10
-                signal['entry_reason'] += "Liquidity grab + "
+        confluence_reason += "Trend-following + Supply zone + Bearish momentum"
+        print(f"✅ High-confluence SHORT signal confirmed!")
+        print(f"📋 Entry reason: {confluence_reason}")
         
-        # Decision threshold
-        if signal['confidence'] >= 70:
-            signal['valid'] = True
-            signal['entry_reason'] += f"M15 downtrend + Supply zone + "
-            if recent_bearish_fvg:
-                signal['entry_reason'] += "Bearish FVG + "
-            if recent_bearish_ob:
-                signal['entry_reason'] += "Bearish OB + "
-            if bearish_momentum:
-                signal['entry_reason'] += "Bearish momentum"
-            
-            signal['entry_reason'] = signal['entry_reason'].rstrip(' + ')
-        else:
-            signal['reasons'].append(f"Insufficient confluence (confidence: {signal['confidence']}%)")
-        
-        return signal
+        # Execute the trade
+        signal = {'entry_reason': confluence_reason, 'confidence': 85}
+        return execute_trade(client, instrument, 'SHORT', signal, df_m1)
         
     except Exception as e:
-        signal['reasons'].append(f"Analysis error: {e}")
-        return signal
+        print(f"❌ Error in trend-following short analysis: {e}")
+        return False
+
+def execute_range_bound_strategy(client, instrument: str, zones_m5: List[Dict], df_m1: pd.DataFrame, current_price: float) -> bool:
+    """
+    Execute the NEW range-bound mean-reversion strategy.
+    
+    This strategy trades during consolidation periods by:
+    1. Selling at strong M5 supply zones (expecting reversion down)
+    2. Buying at strong M5 demand zones (expecting reversion up)
+    3. Using M1 reversal confirmation for precise entries
+    """
+    try:
+        print("\n🔍 Analyzing range-bound mean-reversion opportunity...")
+        
+        if not zones_m5:
+            print("❌ No M5 zones available for range-bound strategy")
+            return False
+        
+        # Check if price is very near a strong supply zone (SELL signal)
+        supply_zones = [z for z in zones_m5 if z['type'] == 'supply']
+        for zone in supply_zones:
+            distance_pct = abs(current_price - zone['price_level']) / current_price * 100
+            
+            # Price must be very close to supply zone (within 0.15% for mean reversion)
+            if current_price >= zone['price_level'] * 0.998 and distance_pct <= 0.15:
+                print(f"✅ Price near supply zone at {zone['price_level']:.5f} for mean-reversion SHORT")
+                
+                # Check for M1 bearish reversal confirmation
+                reversal_signal = confirm_m1_reversal_signal(df_m1)
+                if reversal_signal == 'Bearish Reversal':
+                    print("✅ M1 bearish reversal signal confirmed!")
+                    
+                    entry_reason = f"Range-bound mean-reversion + Supply zone rejection + M1 bearish reversal"
+                    signal = {'entry_reason': entry_reason, 'confidence': 75}
+                    return execute_trade(client, instrument, 'SHORT', signal, df_m1)
+                else:
+                    print(f"❌ No M1 bearish reversal confirmation (got: {reversal_signal})")
+        
+        # Check if price is very near a strong demand zone (BUY signal)
+        demand_zones = [z for z in zones_m5 if z['type'] == 'demand']
+        for zone in demand_zones:
+            distance_pct = abs(current_price - zone['price_level']) / current_price * 100
+            
+            # Price must be very close to demand zone (within 0.15% for mean reversion)
+            if current_price <= zone['price_level'] * 1.002 and distance_pct <= 0.15:
+                print(f"✅ Price near demand zone at {zone['price_level']:.5f} for mean-reversion LONG")
+                
+                # Check for M1 bullish reversal confirmation
+                reversal_signal = confirm_m1_reversal_signal(df_m1)
+                if reversal_signal == 'Bullish Reversal':
+                    print("✅ M1 bullish reversal signal confirmed!")
+                    
+                    entry_reason = f"Range-bound mean-reversion + Demand zone bounce + M1 bullish reversal"
+                    signal = {'entry_reason': entry_reason, 'confidence': 75}
+                    return execute_trade(client, instrument, 'LONG', signal, df_m1)
+                else:
+                    print(f"❌ No M1 bullish reversal confirmation (got: {reversal_signal})")
+        
+        print("❌ No valid range-bound mean-reversion opportunities found")
+        print("📋 Range-bound strategy requires:")
+        print("   • Price very close to strong M5 supply/demand zone (< 0.15%)")
+        print("   • Strong M1 reversal candle confirmation")
+        return False
+        
+    except Exception as e:
+        print(f"❌ Error in range-bound strategy analysis: {e}")
+        return False
 
 def execute_trade(
     client, 
