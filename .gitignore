@@ -1,2 +1,30 @@
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+
+# Virtual environment
 venv/
-venv/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+
+# Claude config
+.claude/
+.claude-code.json
+
+# Jupyter/IPython
+*.ipynb_checkpoints
+
+# OS files
+.DS_Store
+Thumbs.db
+
