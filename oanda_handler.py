@@ -125,8 +125,7 @@ def place_market_order(client, instrument, units, stop_loss_price=None, take_pro
         # Create market order request
         order_data = {
             "instrument": instrument,
-            "units": str(units),
-            "type": "MARKET"
+            "units": str(units)
         }
         
         # Add stop loss if provided
