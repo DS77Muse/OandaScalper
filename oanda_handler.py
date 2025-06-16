@@ -171,6 +171,59 @@ def place_market_order(client, instrument, units, stop_loss_price=None, take_pro
         print(f"✗ Error placing market order: {e}")
         raise
 
+def get_tradable_instruments(client):
+    """
+    Fetches all tradable currency instruments from OANDA account.
+    
+    Args:
+        client (oandapyV20.API): Authenticated API client
+    
+    Returns:
+        list: Sorted list of tradable currency pair names (e.g., ['AUD_USD', 'EUR_USD', ...])
+    """
+    try:
+        # Get account ID from environment
+        account_id = os.getenv('OANDA_ACCOUNT_ID')
+        if not account_id:
+            raise ValueError("OANDA_ACCOUNT_ID not found in environment variables")
+        
+        # Create request for account instruments
+        request = accounts.AccountInstruments(accountID=account_id)
+        response = client.request(request)
+        
+        # Extract instrument data
+        instruments_data = response['instruments']
+        
+        # Filter for currency pairs only, excluding volatile exotic pairs
+        excluded_currencies = {'TRY', 'SEK', 'DKK', 'HUF', 'CZK', 'PLN'}
+        tradable_instruments = []
+        
+        for instrument in instruments_data:
+            # Only include currency instruments
+            if instrument.get('type') == 'CURRENCY':
+                instrument_name = instrument.get('name', '')
+                
+                # Check if instrument contains any excluded currencies
+                contains_excluded = any(currency in instrument_name for currency in excluded_currencies)
+                
+                if not contains_excluded:
+                    tradable_instruments.append(instrument_name)
+        
+        # Sort the list for consistent ordering
+        tradable_instruments.sort()
+        
+        print(f"✓ Successfully loaded {len(tradable_instruments)} tradable currency instruments")
+        print(f"  Sample instruments: {tradable_instruments[:5]}{'...' if len(tradable_instruments) > 5 else ''}")
+        
+        return tradable_instruments
+        
+    except Exception as e:
+        print(f"✗ Error fetching tradable instruments: {e}")
+        # Return a fallback list of major pairs if API call fails
+        fallback_instruments = ['EUR_USD', 'GBP_USD', 'USD_JPY', 'AUD_USD', 'USD_CAD']
+        print(f"  Using fallback instrument list: {fallback_instruments}")
+        return fallback_instruments
+
 def get_account_summary(client):
     """
     Fetches and displays account summary information.
@@ -235,6 +288,11 @@ def test_connection():
         df = get_historical_data(client, 'EUR_USD', count=10, granularity='M5')
         print(f"Sample data (last 5 rows):")
         print(df.tail())
+        
+        # Test tradable instruments fetch
+        print("\nTesting tradable instruments fetch...")
+        instruments = get_tradable_instruments(client)
+        print(f"Found {len(instruments)} tradable instruments")
         
         print("\n✓ All tests passed! OANDA API handler is working correctly.")
         

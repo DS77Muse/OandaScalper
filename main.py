@@ -17,7 +17,7 @@ import traceback
 import json
 
 # Import our custom modules
-from oanda_handler import get_api_client, get_account_summary
+from oanda_handler import get_api_client, get_account_summary, get_tradable_instruments
 from strategy_handler import run_strategy_check
 from journal import initialize_database, get_trading_summary, display_trading_summary, get_open_trades
 
@@ -149,9 +149,12 @@ def get_trading_instruments() -> List[str]:
     
     return instruments
 
-def trading_job():
+def trading_job(instrument_list=None):
     """
     Main trading job that runs periodically to check for trading opportunities.
+    
+    Args:
+        instrument_list (List[str], optional): List of instruments to analyze
     
     This function:
     1. Validates market conditions
@@ -194,8 +197,11 @@ def trading_job():
         except Exception as e:
             logger.warning(f"⚠ Could not fetch account summary: {e}")
         
-        # Get trading instruments
-        instruments = get_trading_instruments()
+        # Get trading instruments (use provided list or fallback to default)
+        if instrument_list is None:
+            instruments = get_trading_instruments()
+        else:
+            instruments = instrument_list
         logger.info(f"🎯 Scanning {len(instruments)} instruments: {', '.join(instruments)}")
         
         # Track results for this trading job
@@ -275,7 +281,7 @@ def display_startup_banner():
 🕒 Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 🎯 Strategy: Multi-Timeframe Price Action + ICT Concepts
 📈 Timeframes: M15 (Context) + M5 (Zones) + M1 (Signals)
-💱 Instruments: EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD
+💱 Instruments: Dynamic loading from OANDA (All major & minor pairs)
 ⚙️ Risk Management: 0.5% per trade, Dynamic stops
 📊 Performance Tracking: Automated journal & analytics
 {'='*80}
@@ -337,6 +343,11 @@ def main():
             logger.error("❌ Trading environment validation failed. Exiting.")
             return
         
+        # Get dynamic list of tradable instruments
+        logger.info("📋 Loading tradable instruments from OANDA...")
+        instrument_list = get_tradable_instruments(client)
+        logger.info(f"✅ Loaded {len(instrument_list)} tradable instruments.")
+        
         # Check current open trades
         open_trades = get_open_trades('trading_journal.db')
         if open_trades:
@@ -348,7 +359,7 @@ def main():
         logger.info("⏰ Setting up trading schedule...")
         
         # Run trading check every minute during market hours
-        schedule.every(1).minutes.do(trading_job)
+        schedule.every(1).minutes.do(trading_job, instrument_list=instrument_list)
         
         # Optional: Add periodic maintenance tasks
         # schedule.every().hour.do(maintenance_job)  # Could add hourly maintenance
