@@ -13,11 +13,13 @@ import warnings
 
 # Import smart money concepts library for ICT analysis
 try:
-    import smartmoneyconcepts as smc
+    import smartmoneyconcepts as smc_lib
+    smc = smc_lib.smc()  # Create instance of the smc class
     SMC_AVAILABLE = True
     print("✓ Smart Money Concepts library loaded successfully")
 except ImportError:
     SMC_AVAILABLE = False
+    smc = None
     print("⚠ Smart Money Concepts library not available - using manual ICT detection")
 
 # Suppress scipy warnings for cleaner output
@@ -326,30 +328,35 @@ def identify_fvg_and_ob(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], List[Di
         if len(df) < 10:
             return fvg_list, ob_list
         
-        if SMC_AVAILABLE:
+        if SMC_AVAILABLE and smc is not None:
             # Try using smart-money-concepts library first
             try:
                 # Prepare data for smart-money-concepts library
                 df_smc = df.copy()
                 df_smc.columns = df_smc.columns.str.capitalize()  # Capitalize column names
                 
-                # Identify Fair Value Gaps using smart-money-concepts
-                fvg_data = smc.fvg(df_smc)
+                # Set data on the SMC instance
+                smc.ohlc = df_smc
                 
-                # Process FVG results
-                if hasattr(fvg_data, 'columns') and len(fvg_data) > 0:
-                    recent_fvgs = fvg_data.tail(20)
+                # Identify Fair Value Gaps using smart-money-concepts
+                fvg_data = smc.fvg()
+                
+                # Process FVG results - this library returns a Series, not DataFrame
+                if isinstance(fvg_data, pd.Series) and len(fvg_data) > 0:
+                    # Get indices where FVG exists (non-zero values)
+                    fvg_indices = fvg_data[fvg_data != 0].index
                     
-                    for idx, row in recent_fvgs.iterrows():
-                        if 'FVG' in row and pd.notna(row['FVG']):
-                            fvg_type = 'bullish' if row['FVG'] > 0 else 'bearish'
+                    for idx in fvg_indices[-20:]:  # Last 20 FVGs
+                        if idx in df.index:
+                            fvg_value = fvg_data[idx]
+                            fvg_type = 'bullish' if fvg_value > 0 else 'bearish'
                             
                             fvg_info = {
                                 'type': fvg_type,
                                 'timestamp': idx,
                                 'high_price': df.loc[idx, 'high'],
                                 'low_price': df.loc[idx, 'low'],
-                                'gap_size': abs(row['FVG']),
+                                'gap_size': abs(fvg_value),
                                 'status': 'unfilled'
                             }
                             
@@ -362,35 +369,42 @@ def identify_fvg_and_ob(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], List[Di
                             
                             fvg_list.append(fvg_info)
                 
-                # Identify Order Blocks using smart-money-concepts
-                ob_data = smc.ob(df_smc)
-                
-                if hasattr(ob_data, 'columns') and len(ob_data) > 0:
-                    recent_obs = ob_data.tail(15)
+                # For Order Blocks, we need swing highs/lows first
+                try:
+                    swing_hl = smc.swing_highs_lows()
+                    ob_data = smc.ob(swing_hl)
                     
-                    for idx, row in recent_obs.iterrows():
-                        if 'OB' in row and pd.notna(row['OB']):
-                            ob_type = 'bullish' if row['OB'] > 0 else 'bearish'
-                            
-                            ob_info = {
-                                'type': ob_type,
-                                'timestamp': idx,
-                                'high_price': df.loc[idx, 'high'],
-                                'low_price': df.loc[idx, 'low'],
-                                'open_price': df.loc[idx, 'open'],
-                                'close_price': df.loc[idx, 'close'],
-                                'strength': abs(row['OB']),
-                                'status': 'active'
-                            }
-                            
-                            if ob_type == 'bullish':
-                                ob_info['zone_high'] = max(ob_info['open_price'], ob_info['close_price'])
-                                ob_info['zone_low'] = ob_info['low_price']
-                            else:
-                                ob_info['zone_high'] = ob_info['high_price']
-                                ob_info['zone_low'] = min(ob_info['open_price'], ob_info['close_price'])
-                            
-                            ob_list.append(ob_info)
+                    # Process Order Block results - also returns a Series
+                    if isinstance(ob_data, pd.Series) and len(ob_data) > 0:
+                        ob_indices = ob_data[ob_data != 0].index
+                        
+                        for idx in ob_indices[-15:]:  # Last 15 OBs
+                            if idx in df.index:
+                                ob_value = ob_data[idx]
+                                ob_type = 'bullish' if ob_value > 0 else 'bearish'
+                                
+                                ob_info = {
+                                    'type': ob_type,
+                                    'timestamp': idx,
+                                    'high_price': df.loc[idx, 'high'],
+                                    'low_price': df.loc[idx, 'low'],
+                                    'open_price': df.loc[idx, 'open'],
+                                    'close_price': df.loc[idx, 'close'],
+                                    'strength': abs(ob_value),
+                                    'status': 'active'
+                                }
+                                
+                                if ob_type == 'bullish':
+                                    ob_info['zone_high'] = max(ob_info['open_price'], ob_info['close_price'])
+                                    ob_info['zone_low'] = ob_info['low_price']
+                                else:
+                                    ob_info['zone_high'] = ob_info['high_price']
+                                    ob_info['zone_low'] = min(ob_info['open_price'], ob_info['close_price'])
+                                
+                                ob_list.append(ob_info)
+                except Exception:
+                    # OB detection failed, will use manual method
+                    pass
                             
             except Exception:
                 # Fallback to manual detection if library fails
