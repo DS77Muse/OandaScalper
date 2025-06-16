@@ -21,6 +21,15 @@ try:
 except ImportError:
     BACKTESTING_AVAILABLE = False
     print("⚠ Backtesting library not available. Install with: pip install backtesting")
+    
+    # Create dummy Strategy class to prevent NameError
+    class Strategy:
+        def __init__(self):
+            pass
+        def init(self):
+            pass
+        def next(self):
+            pass
 
 # Import our analysis functions
 from analysis_engine import (
@@ -109,7 +118,7 @@ class PriceActionStrategy(Strategy):
             
             htf_data = df.resample(freq).agg(ohlc_dict).dropna()
             
-            # Rename columns to match our convention
+            # Rename columns to match our convention (lowercase for analysis engine)
             htf_data.columns = ['open', 'high', 'low', 'close', 'volume']
             
             return htf_data
@@ -132,6 +141,7 @@ class PriceActionStrategy(Strategy):
                 htf_window = self.df_htf[self.df_htf.index <= current_time].tail(self.htf_lookback)
                 
                 if len(htf_window) >= 20:  # Minimum data for analysis
+                    # HTF data already has lowercase columns from create_higher_timeframe_data
                     structure = identify_market_structure(htf_window, lookback_period=20)
                     structure_series.iloc[i] = structure
                 else:
@@ -155,7 +165,10 @@ class PriceActionStrategy(Strategy):
                 window = self.df.iloc[max(0, i-self.zone_lookback):i+1]
                 
                 if len(window) >= 10:
-                    zones = find_supply_demand_zones(window, lookback=10, strength_factor=self.zone_strength)
+                    # Convert to lowercase columns for analysis functions
+                    window_analysis = window.copy()
+                    window_analysis.columns = ['open', 'high', 'low', 'close', 'volume']
+                    zones = find_supply_demand_zones(window_analysis, lookback=10, strength_factor=self.zone_strength)
                     zones_dict[i] = zones
                 else:
                     zones_dict[i] = []
@@ -178,7 +191,10 @@ class PriceActionStrategy(Strategy):
                 window = self.df.iloc[max(0, i-20):i+1]
                 
                 if len(window) >= 5:
-                    fvg_list, ob_list = identify_fvg_and_ob(window)
+                    # Convert to lowercase columns for analysis functions
+                    window_analysis = window.copy()
+                    window_analysis.columns = ['open', 'high', 'low', 'close', 'volume']
+                    fvg_list, ob_list = identify_fvg_and_ob(window_analysis)
                     fvg_dict[i] = {'fvg': fvg_list, 'ob': ob_list}
                 else:
                     fvg_dict[i] = {'fvg': [], 'ob': []}
@@ -296,9 +312,9 @@ class PriceActionStrategy(Strategy):
             
             for i in range(len(recent_candles)):
                 candle = recent_candles.iloc[i]
-                if candle['close'] > candle['open']:
-                    body_size = candle['close'] - candle['open']
-                    candle_range = candle['high'] - candle['low']
+                if candle['Close'] > candle['Open']:
+                    body_size = candle['Close'] - candle['Open']
+                    candle_range = candle['High'] - candle['Low']
                     if candle_range > 0 and body_size / candle_range > 0.6:
                         bullish_momentum = True
                         break
@@ -373,9 +389,9 @@ class PriceActionStrategy(Strategy):
             
             for i in range(len(recent_candles)):
                 candle = recent_candles.iloc[i]
-                if candle['close'] < candle['open']:
-                    body_size = candle['open'] - candle['close']
-                    candle_range = candle['high'] - candle['low']
+                if candle['Close'] < candle['Open']:
+                    body_size = candle['Open'] - candle['Close']
+                    candle_range = candle['High'] - candle['Low']
                     if candle_range > 0 and body_size / candle_range > 0.6:
                         bearish_momentum = True
                         break
@@ -522,6 +538,12 @@ def fetch_backtest_data(instrument: str = 'EUR_USD', days: int = 30, granularity
         # Format for backtesting.py (requires specific column names)
         df_backtest = df.copy()
         df_backtest.columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        
+        # Ensure all values are numeric and handle any NaN values
+        df_backtest = df_backtest.dropna()
+        
+        print(f"✓ Data formatted: columns {df_backtest.columns.tolist()}")
+        print(f"📋 Sample data:\n{df_backtest.head(2)}")
         
         print(f"✓ Data fetched successfully: {len(df_backtest)} candles")
         print(f"📅 Date range: {df_backtest.index[0]} to {df_backtest.index[-1]}")

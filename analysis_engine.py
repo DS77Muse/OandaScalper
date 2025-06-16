@@ -18,7 +18,7 @@ try:
     print("✓ Smart Money Concepts library loaded successfully")
 except ImportError:
     SMC_AVAILABLE = False
-    print("⚠ Smart Money Concepts library not available. Install with: pip install smart-money-concepts")
+    print("⚠ Smart Money Concepts library not available - using manual ICT detection")
 
 # Suppress scipy warnings for cleaner output
 warnings.filterwarnings('ignore', category=RuntimeWarning)
@@ -234,7 +234,8 @@ def find_supply_demand_zones(df: pd.DataFrame, lookback: int = 20, strength_fact
         
         final_zones = demand_zones + supply_zones
         
-        print(f"✓ Identified {len(demand_zones)} demand zones and {len(supply_zones)} supply zones")
+        # Suppress output during backtesting to reduce noise
+        pass
         
         return final_zones
         
@@ -316,10 +317,6 @@ def identify_fvg_and_ob(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], List[Di
         fvg_list = []
         ob_list = []
         
-        if not SMC_AVAILABLE:
-            print("⚠ Smart Money Concepts library not available for FVG/OB analysis")
-            return fvg_list, ob_list
-        
         # Ensure DataFrame has the required columns
         if not all(col in df.columns for col in ['open', 'high', 'low', 'close']):
             print("✗ DataFrame missing required OHLC columns")
@@ -327,100 +324,88 @@ def identify_fvg_and_ob(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], List[Di
         
         # Need at least 10 candles for meaningful analysis
         if len(df) < 10:
-            print("⚠ Insufficient data for FVG/OB analysis")
             return fvg_list, ob_list
         
-        # Prepare data for smart-money-concepts library
-        # The library expects specific column names and data types
-        df_smc = df.copy()
-        df_smc.columns = df_smc.columns.str.capitalize()  # Capitalize column names
-        
-        # Identify Fair Value Gaps using smart-money-concepts
-        try:
-            fvg_data = smc.fvg(df_smc)
-            
-            # Process FVG results
-            if hasattr(fvg_data, 'columns') and len(fvg_data) > 0:
-                # Get recent FVGs (last 20)
-                recent_fvgs = fvg_data.tail(20)
+        if SMC_AVAILABLE:
+            # Try using smart-money-concepts library first
+            try:
+                # Prepare data for smart-money-concepts library
+                df_smc = df.copy()
+                df_smc.columns = df_smc.columns.str.capitalize()  # Capitalize column names
                 
-                for idx, row in recent_fvgs.iterrows():
-                    # Extract FVG information
-                    if 'FVG' in row and pd.notna(row['FVG']):
-                        fvg_type = 'bullish' if row['FVG'] > 0 else 'bearish'
-                        
-                        fvg_info = {
-                            'type': fvg_type,
-                            'timestamp': idx,
-                            'high_price': df.loc[idx, 'high'],
-                            'low_price': df.loc[idx, 'low'],
-                            'gap_size': abs(row['FVG']),
-                            'status': 'unfilled'  # Track if gap has been filled
-                        }
-                        
-                        # Calculate gap levels
-                        if fvg_type == 'bullish':
-                            # Bullish FVG: gap between previous high and current low
-                            fvg_info['upper_level'] = df.loc[idx, 'low']
-                            fvg_info['lower_level'] = fvg_info['upper_level'] - fvg_info['gap_size']
-                        else:
-                            # Bearish FVG: gap between previous low and current high
-                            fvg_info['lower_level'] = df.loc[idx, 'high']
-                            fvg_info['upper_level'] = fvg_info['lower_level'] + fvg_info['gap_size']
-                        
-                        fvg_list.append(fvg_info)
-                        
-        except Exception as e:
-            print(f"⚠ Error in FVG analysis: {e}")
-        
-        # Identify Order Blocks using smart-money-concepts
-        try:
-            ob_data = smc.ob(df_smc)
-            
-            # Process Order Block results
-            if hasattr(ob_data, 'columns') and len(ob_data) > 0:
-                # Get recent Order Blocks (last 15)
-                recent_obs = ob_data.tail(15)
+                # Identify Fair Value Gaps using smart-money-concepts
+                fvg_data = smc.fvg(df_smc)
                 
-                for idx, row in recent_obs.iterrows():
-                    # Extract Order Block information
-                    if 'OB' in row and pd.notna(row['OB']):
-                        ob_type = 'bullish' if row['OB'] > 0 else 'bearish'
-                        
-                        ob_info = {
-                            'type': ob_type,
-                            'timestamp': idx,
-                            'high_price': df.loc[idx, 'high'],
-                            'low_price': df.loc[idx, 'low'],
-                            'open_price': df.loc[idx, 'open'],
-                            'close_price': df.loc[idx, 'close'],
-                            'strength': abs(row['OB']),
-                            'status': 'active'  # Track if OB has been mitigated
-                        }
-                        
-                        # For bullish OB: zone is the low to open of the last down candle before impulse
-                        # For bearish OB: zone is the open to high of the last up candle before impulse
-                        if ob_type == 'bullish':
-                            ob_info['zone_high'] = max(ob_info['open_price'], ob_info['close_price'])
-                            ob_info['zone_low'] = ob_info['low_price']
-                        else:
-                            ob_info['zone_high'] = ob_info['high_price']
-                            ob_info['zone_low'] = min(ob_info['open_price'], ob_info['close_price'])
-                        
-                        ob_list.append(ob_info)
-                        
-        except Exception as e:
-            print(f"⚠ Error in Order Block analysis: {e}")
+                # Process FVG results
+                if hasattr(fvg_data, 'columns') and len(fvg_data) > 0:
+                    recent_fvgs = fvg_data.tail(20)
+                    
+                    for idx, row in recent_fvgs.iterrows():
+                        if 'FVG' in row and pd.notna(row['FVG']):
+                            fvg_type = 'bullish' if row['FVG'] > 0 else 'bearish'
+                            
+                            fvg_info = {
+                                'type': fvg_type,
+                                'timestamp': idx,
+                                'high_price': df.loc[idx, 'high'],
+                                'low_price': df.loc[idx, 'low'],
+                                'gap_size': abs(row['FVG']),
+                                'status': 'unfilled'
+                            }
+                            
+                            if fvg_type == 'bullish':
+                                fvg_info['upper_level'] = df.loc[idx, 'low']
+                                fvg_info['lower_level'] = fvg_info['upper_level'] - fvg_info['gap_size']
+                            else:
+                                fvg_info['lower_level'] = df.loc[idx, 'high']
+                                fvg_info['upper_level'] = fvg_info['lower_level'] + fvg_info['gap_size']
+                            
+                            fvg_list.append(fvg_info)
+                
+                # Identify Order Blocks using smart-money-concepts
+                ob_data = smc.ob(df_smc)
+                
+                if hasattr(ob_data, 'columns') and len(ob_data) > 0:
+                    recent_obs = ob_data.tail(15)
+                    
+                    for idx, row in recent_obs.iterrows():
+                        if 'OB' in row and pd.notna(row['OB']):
+                            ob_type = 'bullish' if row['OB'] > 0 else 'bearish'
+                            
+                            ob_info = {
+                                'type': ob_type,
+                                'timestamp': idx,
+                                'high_price': df.loc[idx, 'high'],
+                                'low_price': df.loc[idx, 'low'],
+                                'open_price': df.loc[idx, 'open'],
+                                'close_price': df.loc[idx, 'close'],
+                                'strength': abs(row['OB']),
+                                'status': 'active'
+                            }
+                            
+                            if ob_type == 'bullish':
+                                ob_info['zone_high'] = max(ob_info['open_price'], ob_info['close_price'])
+                                ob_info['zone_low'] = ob_info['low_price']
+                            else:
+                                ob_info['zone_high'] = ob_info['high_price']
+                                ob_info['zone_low'] = min(ob_info['open_price'], ob_info['close_price'])
+                            
+                            ob_list.append(ob_info)
+                            
+            except Exception:
+                # Fallback to manual detection if library fails
+                pass
         
-        # Alternative manual FVG detection if library fails
+        # Use manual detection if library unavailable or failed
         if not fvg_list:
             fvg_list = detect_fvg_manually(df)
         
-        # Alternative manual OB detection if library fails
         if not ob_list:
             ob_list = detect_ob_manually(df)
         
-        print(f"✓ Identified {len(fvg_list)} Fair Value Gaps and {len(ob_list)} Order Blocks")
+        # Only print if we found significant patterns (reduce noise in backtesting)
+        if len(fvg_list) > 0 or len(ob_list) > 0:
+            pass  # Suppress output during backtesting to reduce noise
         
         return fvg_list, ob_list
         

@@ -3,5 +3,5 @@ pandas
 python-dotenv
 scipy
 numpy
-smart-money-concepts
 backtesting
+bokeh
