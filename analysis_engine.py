@@ -11,6 +11,15 @@ from scipy.signal import find_peaks
 from typing import List, Dict, Tuple, Optional, Any
 import warnings
 
+# Import smart money concepts library for ICT analysis
+try:
+    import smartmoneyconcepts as smc
+    SMC_AVAILABLE = True
+    print("✓ Smart Money Concepts library loaded successfully")
+except ImportError:
+    SMC_AVAILABLE = False
+    print("⚠ Smart Money Concepts library not available. Install with: pip install smart-money-concepts")
+
 # Suppress scipy warnings for cleaner output
 warnings.filterwarnings('ignore', category=RuntimeWarning)
 
@@ -289,6 +298,332 @@ def get_current_price_context(df: pd.DataFrame, zones: List[Dict[str, Any]], cur
         print(f"✗ Error in price context analysis: {e}")
         return {'current_price': current_price, 'error': str(e)}
 
+def identify_fvg_and_ob(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """
+    Identify Fair Value Gaps (FVGs) and Order Blocks (OBs) using ICT concepts.
+    
+    This function uses the smart-money-concepts library to identify:
+    - Fair Value Gaps: Price inefficiencies that need to be filled
+    - Order Blocks: Institutional order zones where smart money placed orders
+    
+    Args:
+        df (pd.DataFrame): OHLC data with columns: open, high, low, close
+    
+    Returns:
+        Tuple[List[Dict], List[Dict]]: (FVG list, Order Block list)
+    """
+    try:
+        fvg_list = []
+        ob_list = []
+        
+        if not SMC_AVAILABLE:
+            print("⚠ Smart Money Concepts library not available for FVG/OB analysis")
+            return fvg_list, ob_list
+        
+        # Ensure DataFrame has the required columns
+        if not all(col in df.columns for col in ['open', 'high', 'low', 'close']):
+            print("✗ DataFrame missing required OHLC columns")
+            return fvg_list, ob_list
+        
+        # Need at least 10 candles for meaningful analysis
+        if len(df) < 10:
+            print("⚠ Insufficient data for FVG/OB analysis")
+            return fvg_list, ob_list
+        
+        # Prepare data for smart-money-concepts library
+        # The library expects specific column names and data types
+        df_smc = df.copy()
+        df_smc.columns = df_smc.columns.str.capitalize()  # Capitalize column names
+        
+        # Identify Fair Value Gaps using smart-money-concepts
+        try:
+            fvg_data = smc.fvg(df_smc)
+            
+            # Process FVG results
+            if hasattr(fvg_data, 'columns') and len(fvg_data) > 0:
+                # Get recent FVGs (last 20)
+                recent_fvgs = fvg_data.tail(20)
+                
+                for idx, row in recent_fvgs.iterrows():
+                    # Extract FVG information
+                    if 'FVG' in row and pd.notna(row['FVG']):
+                        fvg_type = 'bullish' if row['FVG'] > 0 else 'bearish'
+                        
+                        fvg_info = {
+                            'type': fvg_type,
+                            'timestamp': idx,
+                            'high_price': df.loc[idx, 'high'],
+                            'low_price': df.loc[idx, 'low'],
+                            'gap_size': abs(row['FVG']),
+                            'status': 'unfilled'  # Track if gap has been filled
+                        }
+                        
+                        # Calculate gap levels
+                        if fvg_type == 'bullish':
+                            # Bullish FVG: gap between previous high and current low
+                            fvg_info['upper_level'] = df.loc[idx, 'low']
+                            fvg_info['lower_level'] = fvg_info['upper_level'] - fvg_info['gap_size']
+                        else:
+                            # Bearish FVG: gap between previous low and current high
+                            fvg_info['lower_level'] = df.loc[idx, 'high']
+                            fvg_info['upper_level'] = fvg_info['lower_level'] + fvg_info['gap_size']
+                        
+                        fvg_list.append(fvg_info)
+                        
+        except Exception as e:
+            print(f"⚠ Error in FVG analysis: {e}")
+        
+        # Identify Order Blocks using smart-money-concepts
+        try:
+            ob_data = smc.ob(df_smc)
+            
+            # Process Order Block results
+            if hasattr(ob_data, 'columns') and len(ob_data) > 0:
+                # Get recent Order Blocks (last 15)
+                recent_obs = ob_data.tail(15)
+                
+                for idx, row in recent_obs.iterrows():
+                    # Extract Order Block information
+                    if 'OB' in row and pd.notna(row['OB']):
+                        ob_type = 'bullish' if row['OB'] > 0 else 'bearish'
+                        
+                        ob_info = {
+                            'type': ob_type,
+                            'timestamp': idx,
+                            'high_price': df.loc[idx, 'high'],
+                            'low_price': df.loc[idx, 'low'],
+                            'open_price': df.loc[idx, 'open'],
+                            'close_price': df.loc[idx, 'close'],
+                            'strength': abs(row['OB']),
+                            'status': 'active'  # Track if OB has been mitigated
+                        }
+                        
+                        # For bullish OB: zone is the low to open of the last down candle before impulse
+                        # For bearish OB: zone is the open to high of the last up candle before impulse
+                        if ob_type == 'bullish':
+                            ob_info['zone_high'] = max(ob_info['open_price'], ob_info['close_price'])
+                            ob_info['zone_low'] = ob_info['low_price']
+                        else:
+                            ob_info['zone_high'] = ob_info['high_price']
+                            ob_info['zone_low'] = min(ob_info['open_price'], ob_info['close_price'])
+                        
+                        ob_list.append(ob_info)
+                        
+        except Exception as e:
+            print(f"⚠ Error in Order Block analysis: {e}")
+        
+        # Alternative manual FVG detection if library fails
+        if not fvg_list:
+            fvg_list = detect_fvg_manually(df)
+        
+        # Alternative manual OB detection if library fails
+        if not ob_list:
+            ob_list = detect_ob_manually(df)
+        
+        print(f"✓ Identified {len(fvg_list)} Fair Value Gaps and {len(ob_list)} Order Blocks")
+        
+        return fvg_list, ob_list
+        
+    except Exception as e:
+        print(f"✗ Error in FVG/OB analysis: {e}")
+        return [], []
+
+def detect_fvg_manually(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """
+    Manual Fair Value Gap detection algorithm.
+    
+    A bullish FVG occurs when: low[i] > high[i-2] (gap up)
+    A bearish FVG occurs when: high[i] < low[i-2] (gap down)
+    """
+    fvg_list = []
+    
+    try:
+        for i in range(2, len(df)):
+            current_high = df.iloc[i]['high']
+            current_low = df.iloc[i]['low']
+            prev2_high = df.iloc[i-2]['high']
+            prev2_low = df.iloc[i-2]['low']
+            
+            # Bullish FVG: Current low > Previous high (2 bars ago)
+            if current_low > prev2_high:
+                gap_size = current_low - prev2_high
+                
+                fvg_info = {
+                    'type': 'bullish',
+                    'timestamp': df.index[i],
+                    'upper_level': current_low,
+                    'lower_level': prev2_high,
+                    'gap_size': gap_size,
+                    'high_price': current_high,
+                    'low_price': current_low,
+                    'status': 'unfilled'
+                }
+                fvg_list.append(fvg_info)
+            
+            # Bearish FVG: Current high < Previous low (2 bars ago)
+            elif current_high < prev2_low:
+                gap_size = prev2_low - current_high
+                
+                fvg_info = {
+                    'type': 'bearish',
+                    'timestamp': df.index[i],
+                    'upper_level': prev2_low,
+                    'lower_level': current_high,
+                    'gap_size': gap_size,
+                    'high_price': current_high,
+                    'low_price': current_low,
+                    'status': 'unfilled'
+                }
+                fvg_list.append(fvg_info)
+        
+        # Keep only the most recent FVGs (last 20)
+        fvg_list = fvg_list[-20:]
+        
+    except Exception as e:
+        print(f"✗ Error in manual FVG detection: {e}")
+    
+    return fvg_list
+
+def detect_ob_manually(df: pd.DataFrame) -> List[Dict[str, Any]]:
+    """
+    Manual Order Block detection algorithm.
+    
+    An Order Block is typically the last opposite-colored candle before a strong impulsive move.
+    """
+    ob_list = []
+    
+    try:
+        # Calculate candle direction and strength
+        df_copy = df.copy()
+        df_copy['direction'] = np.where(df_copy['close'] > df_copy['open'], 1, -1)
+        df_copy['body_size'] = abs(df_copy['close'] - df_copy['open'])
+        df_copy['avg_body'] = df_copy['body_size'].rolling(window=10).mean()
+        
+        for i in range(10, len(df_copy) - 3):
+            current_body = df_copy.iloc[i]['body_size']
+            avg_body = df_copy.iloc[i]['avg_body']
+            
+            # Look for strong impulsive moves (body > 1.5x average)
+            if current_body > avg_body * 1.5:
+                current_direction = df_copy.iloc[i]['direction']
+                
+                # Look back for the last opposite candle (potential OB)
+                for j in range(i-1, max(i-5, 0), -1):
+                    if df_copy.iloc[j]['direction'] == -current_direction:
+                        # Found potential Order Block
+                        ob_candle = df_copy.iloc[j]
+                        
+                        ob_type = 'bullish' if current_direction == 1 else 'bearish'
+                        
+                        ob_info = {
+                            'type': ob_type,
+                            'timestamp': df_copy.index[j],
+                            'high_price': ob_candle['high'],
+                            'low_price': ob_candle['low'],
+                            'open_price': ob_candle['open'],
+                            'close_price': ob_candle['close'],
+                            'strength': current_body / avg_body,
+                            'status': 'active'
+                        }
+                        
+                        # Define zone boundaries
+                        if ob_type == 'bullish':
+                            ob_info['zone_high'] = max(ob_candle['open'], ob_candle['close'])
+                            ob_info['zone_low'] = ob_candle['low']
+                        else:
+                            ob_info['zone_high'] = ob_candle['high']
+                            ob_info['zone_low'] = min(ob_candle['open'], ob_candle['close'])
+                        
+                        ob_list.append(ob_info)
+                        break  # Only take the first (most recent) opposite candle
+        
+        # Keep only unique and recent OBs (last 15)
+        seen_timestamps = set()
+        unique_obs = []
+        for ob in reversed(ob_list):  # Process in reverse to keep most recent
+            if ob['timestamp'] not in seen_timestamps:
+                unique_obs.append(ob)
+                seen_timestamps.add(ob['timestamp'])
+                if len(unique_obs) >= 15:
+                    break
+        
+        ob_list = list(reversed(unique_obs))
+        
+    except Exception as e:
+        print(f"✗ Error in manual OB detection: {e}")
+    
+    return ob_list
+
+def check_for_liquidity_grab(df: pd.DataFrame, key_level: float, tolerance: float = 0.0005) -> bool:
+    """
+    Check for liquidity grab around a key level (support/resistance).
+    
+    A liquidity grab occurs when:
+    1. Price pierces just below/above a key level (hunting stops)
+    2. Price quickly reverses and closes significantly away from the breach
+    3. This forms a wick/pin bar pattern
+    
+    Args:
+        df (pd.DataFrame): OHLC data
+        key_level (float): Price level to check for liquidity grab
+        tolerance (float): How far price can pierce beyond the level
+    
+    Returns:
+        bool: True if liquidity grab detected, False otherwise
+    """
+    try:
+        if len(df) < 5:
+            return False
+        
+        # Check the last few candles for liquidity grab patterns
+        recent_candles = df.tail(5)
+        
+        for idx, candle in recent_candles.iterrows():
+            candle_high = candle['high']
+            candle_low = candle['low']
+            candle_open = candle['open']
+            candle_close = candle['close']
+            
+            # Calculate candle body and total range
+            body_size = abs(candle_close - candle_open)
+            total_range = candle_high - candle_low
+            
+            # Skip doji/small candles
+            if total_range == 0 or body_size / total_range < 0.3:
+                continue
+            
+            # Check for liquidity grab below key level (bullish reversal)
+            if candle_low < (key_level - tolerance):
+                # Price pierced below the key level
+                
+                # Check if candle closed significantly higher than the low
+                close_above_low = (candle_close - candle_low) / total_range
+                
+                # Look for strong reversal: close in upper 60% of candle range
+                if close_above_low > 0.6 and candle_close > key_level:
+                    print(f"✓ Bullish liquidity grab detected at {key_level:.5f}")
+                    print(f"  Candle low: {candle_low:.5f}, close: {candle_close:.5f}")
+                    return True
+            
+            # Check for liquidity grab above key level (bearish reversal)
+            elif candle_high > (key_level + tolerance):
+                # Price pierced above the key level
+                
+                # Check if candle closed significantly lower than the high
+                close_below_high = (candle_high - candle_close) / total_range
+                
+                # Look for strong reversal: close in lower 60% of candle range
+                if close_below_high > 0.6 and candle_close < key_level:
+                    print(f"✓ Bearish liquidity grab detected at {key_level:.5f}")
+                    print(f"  Candle high: {candle_high:.5f}, close: {candle_close:.5f}")
+                    return True
+        
+        return False
+        
+    except Exception as e:
+        print(f"✗ Error checking for liquidity grab: {e}")
+        return False
+
 def test_analysis_functions():
     """
     Test the core analysis functions with sample data.
@@ -357,6 +692,34 @@ def test_analysis_functions():
         
         if context['nearest_demand']:
             print(f"  Nearest Demand: {context['nearest_demand']['price_level']:.5f}")
+        
+        # Test 4: ICT Analysis (FVG and Order Blocks)
+        print("\n4. Testing ICT analysis (FVG and Order Blocks)...")
+        fvg_list, ob_list = identify_fvg_and_ob(df)
+        
+        if fvg_list:
+            print(f"  Found {len(fvg_list)} Fair Value Gaps:")
+            for fvg in fvg_list[:3]:  # Show first 3 FVGs
+                print(f"    {fvg['type'].upper()} FVG: {fvg['lower_level']:.5f} - {fvg['upper_level']:.5f}")
+        
+        if ob_list:
+            print(f"  Found {len(ob_list)} Order Blocks:")
+            for ob in ob_list[:3]:  # Show first 3 OBs
+                print(f"    {ob['type'].upper()} OB: {ob['zone_low']:.5f} - {ob['zone_high']:.5f}")
+        
+        # Test 5: Liquidity Grab Detection
+        print("\n5. Testing liquidity grab detection...")
+        if zones:
+            # Test with a supply zone level
+            supply_zones = [z for z in zones if z['type'] == 'supply']
+            if supply_zones:
+                test_level = supply_zones[0]['price_level']
+                liquidity_grab = check_for_liquidity_grab(df, test_level)
+                print(f"  Liquidity grab at {test_level:.5f}: {liquidity_grab}")
+            else:
+                print("  No supply zones available for liquidity grab test")
+        else:
+            print("  No zones available for liquidity grab test")
         
         print("\n✓ All analysis engine tests completed successfully!")
         
