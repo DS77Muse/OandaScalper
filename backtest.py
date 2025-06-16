@@ -37,7 +37,8 @@ from analysis_engine import (
     find_supply_demand_zones,
     get_current_price_context,
     identify_fvg_and_ob,
-    check_for_liquidity_grab
+    check_for_liquidity_grab,
+    confirm_m1_reversal_signal
 )
 from oanda_handler import get_api_client, get_historical_data
 
@@ -207,10 +208,11 @@ class PriceActionStrategy(Strategy):
     
     def next(self):
         """
-        Main strategy logic executed on each bar.
+        Main DUAL-MODE strategy logic executed on each bar.
         
-        This implements the same confluence-based logic as strategy_handler.py
-        but adapted for the backtesting framework.
+        This implements the same dual-mode logic as strategy_handler.py:
+        - Trend-Following mode for Uptrend/Downtrend contexts
+        - Range-Bound mode for Range contexts
         """
         try:
             # Skip if not enough data or in cooldown period
@@ -224,89 +226,77 @@ class PriceActionStrategy(Strategy):
             
             # Get current market data
             current_price = self.data.Close[-1]
-            current_high = self.data.High[-1]
-            current_low = self.data.Low[-1]
             
             # Get pre-calculated analysis data
             market_structure = self.market_structure.iloc[current_bar] if current_bar < len(self.market_structure) else 'Range'
             zones = self.supply_demand_zones.get(current_bar, [])
-            ict_data = self.fvg_signals.get(current_bar, {'fvg': [], 'ob': []})
             
-            # Analyze long opportunity
-            long_signal = self.analyze_long_confluence(
-                market_structure, zones, ict_data, current_price, current_bar
-            )
-            
-            # Analyze short opportunity
-            short_signal = self.analyze_short_confluence(
-                market_structure, zones, ict_data, current_price, current_bar
-            )
-            
-            # Execute trades based on signals
-            if long_signal['valid'] and long_signal['confidence'] >= self.confidence_threshold:
-                self.execute_long_trade(current_price, long_signal)
-                
-            elif short_signal['valid'] and short_signal['confidence'] >= self.confidence_threshold:
-                self.execute_short_trade(current_price, short_signal)
+            # DUAL-MODE STRATEGY LOGIC
+            # Mode A: Trend-Following (Original high-confluence strategy)
+            if market_structure == 'Uptrend':
+                if self.execute_trend_following_long(zones, current_price, current_bar):
+                    return
+                    
+            elif market_structure == 'Downtrend':
+                if self.execute_trend_following_short(zones, current_price, current_bar):
+                    return
+                    
+            # Mode B: Range-Bound (New mean-reversion strategy)
+            elif market_structure == 'Range':
+                if self.execute_range_bound_strategy(zones, current_price, current_bar):
+                    return
                 
         except Exception as e:
-            print(f"✗ Error in strategy logic at bar {current_bar}: {e}")
+            print(f"✗ Error in dual-mode strategy logic at bar {current_bar}: {e}")
     
-    def analyze_long_confluence(self, market_structure: str, zones: List, ict_data: Dict, 
-                               current_price: float, current_bar: int) -> Dict:
+    def execute_trend_following_long(self, zones: List, current_price: float, current_bar: int) -> bool:
         """
-        Analyze long trade confluence (simplified version of strategy_handler logic).
+        Execute trend-following long strategy (mirrors strategy_handler.py).
         """
-        signal = {'valid': False, 'confidence': 0, 'reasons': []}
-        
         try:
-            # Requirement 1: Market structure must be uptrend
-            if market_structure != 'Uptrend':
-                signal['reasons'].append(f"Market structure: {market_structure}")
-                return signal
-            signal['confidence'] += 25
-            
-            # Requirement 2: Price near demand zone
+            # Get demand zones
             demand_zones = [z for z in zones if z['type'] == 'demand']
-            near_demand = False
+            if not demand_zones:
+                return False
             
+            # Check if price is near demand zone (within 0.2%)
+            near_demand = False
             for zone in demand_zones:
                 distance_pct = abs(current_price - zone['price_level']) / current_price * 100
-                if current_price >= zone['price_level'] * 0.999 and distance_pct <= 0.3:
+                if current_price >= zone['price_level'] * 0.999 and distance_pct <= 0.2:
                     near_demand = True
                     break
             
             if not near_demand:
-                signal['reasons'].append("Not near demand zone")
-                return signal
-            signal['confidence'] += 25
+                return False
             
-            # Requirement 3: Recent bullish ICT pattern
-            recent_bullish_pattern = False
+            # Get ICT analysis for confluence
+            ict_data = self.fvg_signals.get(current_bar, {'fvg': [], 'ob': []})
             
-            # Check FVGs
-            for fvg in ict_data['fvg'][-3:]:  # Last 3 FVGs
+            # Check for recent bullish ICT patterns
+            recent_bullish_confluence = False
+            
+            # Check bullish FVGs
+            for fvg in ict_data['fvg'][-3:]:
                 if (fvg['type'] == 'bullish' and 
                     current_price >= fvg['lower_level'] and 
-                    current_price <= fvg['upper_level'] * 1.002):
-                    recent_bullish_pattern = True
+                    current_price <= fvg['upper_level'] * 1.001):
+                    recent_bullish_confluence = True
                     break
             
-            # Check Order Blocks
-            if not recent_bullish_pattern:
-                for ob in ict_data['ob'][-3:]:  # Last 3 OBs
+            # Check bullish Order Blocks
+            if not recent_bullish_confluence:
+                for ob in ict_data['ob'][-3:]:
                     if (ob['type'] == 'bullish' and 
                         current_price >= ob['zone_low'] and 
-                        current_price <= ob['zone_high'] * 1.002):
-                        recent_bullish_pattern = True
+                        current_price <= ob['zone_high'] * 1.001):
+                        recent_bullish_confluence = True
                         break
             
-            if not recent_bullish_pattern:
-                signal['reasons'].append("No recent bullish pattern")
-                return signal
-            signal['confidence'] += 30
+            if not recent_bullish_confluence:
+                return False
             
-            # Requirement 4: Recent bullish momentum
+            # Look for bullish momentum confirmation
             recent_candles = self.data.df.iloc[current_bar-3:current_bar+1]
             bullish_momentum = False
             
@@ -319,71 +309,65 @@ class PriceActionStrategy(Strategy):
                         bullish_momentum = True
                         break
             
-            if bullish_momentum:
-                signal['confidence'] += 20
+            if not bullish_momentum:
+                return False
             
-            signal['valid'] = True
-            return signal
+            # Execute the trade
+            self.execute_long_trade(current_price, {'confidence': 85, 'mode': 'trend-following'})
+            return True
             
         except Exception as e:
-            signal['reasons'].append(f"Analysis error: {e}")
-            return signal
+            print(f"✗ Error in trend-following long: {e}")
+            return False
     
-    def analyze_short_confluence(self, market_structure: str, zones: List, ict_data: Dict,
-                                current_price: float, current_bar: int) -> Dict:
+    def execute_trend_following_short(self, zones: List, current_price: float, current_bar: int) -> bool:
         """
-        Analyze short trade confluence (simplified version of strategy_handler logic).
+        Execute trend-following short strategy (mirrors strategy_handler.py).
         """
-        signal = {'valid': False, 'confidence': 0, 'reasons': []}
-        
         try:
-            # Requirement 1: Market structure must be downtrend
-            if market_structure != 'Downtrend':
-                signal['reasons'].append(f"Market structure: {market_structure}")
-                return signal
-            signal['confidence'] += 25
-            
-            # Requirement 2: Price near supply zone
+            # Get supply zones
             supply_zones = [z for z in zones if z['type'] == 'supply']
-            near_supply = False
+            if not supply_zones:
+                return False
             
+            # Check if price is near supply zone (within 0.2%)
+            near_supply = False
             for zone in supply_zones:
                 distance_pct = abs(current_price - zone['price_level']) / current_price * 100
-                if current_price <= zone['price_level'] * 1.001 and distance_pct <= 0.3:
+                if current_price <= zone['price_level'] * 1.001 and distance_pct <= 0.2:
                     near_supply = True
                     break
             
             if not near_supply:
-                signal['reasons'].append("Not near supply zone")
-                return signal
-            signal['confidence'] += 25
+                return False
             
-            # Requirement 3: Recent bearish ICT pattern
-            recent_bearish_pattern = False
+            # Get ICT analysis for confluence
+            ict_data = self.fvg_signals.get(current_bar, {'fvg': [], 'ob': []})
             
-            # Check FVGs
+            # Check for recent bearish ICT patterns
+            recent_bearish_confluence = False
+            
+            # Check bearish FVGs
             for fvg in ict_data['fvg'][-3:]:
                 if (fvg['type'] == 'bearish' and 
                     current_price <= fvg['upper_level'] and 
-                    current_price >= fvg['lower_level'] * 0.998):
-                    recent_bearish_pattern = True
+                    current_price >= fvg['lower_level'] * 0.999):
+                    recent_bearish_confluence = True
                     break
             
-            # Check Order Blocks
-            if not recent_bearish_pattern:
+            # Check bearish Order Blocks
+            if not recent_bearish_confluence:
                 for ob in ict_data['ob'][-3:]:
                     if (ob['type'] == 'bearish' and 
                         current_price <= ob['zone_high'] and 
-                        current_price >= ob['zone_low'] * 0.998):
-                        recent_bearish_pattern = True
+                        current_price >= ob['zone_low'] * 0.999):
+                        recent_bearish_confluence = True
                         break
             
-            if not recent_bearish_pattern:
-                signal['reasons'].append("No recent bearish pattern")
-                return signal
-            signal['confidence'] += 30
+            if not recent_bearish_confluence:
+                return False
             
-            # Requirement 4: Recent bearish momentum
+            # Look for bearish momentum confirmation
             recent_candles = self.data.df.iloc[current_bar-3:current_bar+1]
             bearish_momentum = False
             
@@ -396,15 +380,61 @@ class PriceActionStrategy(Strategy):
                         bearish_momentum = True
                         break
             
-            if bearish_momentum:
-                signal['confidence'] += 20
+            if not bearish_momentum:
+                return False
             
-            signal['valid'] = True
-            return signal
+            # Execute the trade
+            self.execute_short_trade(current_price, {'confidence': 85, 'mode': 'trend-following'})
+            return True
             
         except Exception as e:
-            signal['reasons'].append(f"Analysis error: {e}")
-            return signal
+            print(f"✗ Error in trend-following short: {e}")
+            return False
+    
+    def execute_range_bound_strategy(self, zones: List, current_price: float, current_bar: int) -> bool:
+        """
+        Execute NEW range-bound mean-reversion strategy (mirrors strategy_handler.py).
+        """
+        try:
+            if not zones:
+                return False
+            
+            # Get recent M1 data for reversal signal
+            recent_m1_data = self.data.df.iloc[current_bar-10:current_bar+1].copy()
+            recent_m1_data.columns = ['open', 'high', 'low', 'close', 'volume']
+            
+            # Check if price is very near a strong supply zone (SELL signal)
+            supply_zones = [z for z in zones if z['type'] == 'supply']
+            for zone in supply_zones:
+                distance_pct = abs(current_price - zone['price_level']) / current_price * 100
+                
+                # Price must be very close to supply zone (within 0.15% for mean reversion)
+                if current_price >= zone['price_level'] * 0.998 and distance_pct <= 0.15:
+                    # Check for M1 bearish reversal confirmation
+                    reversal_signal = confirm_m1_reversal_signal(recent_m1_data)
+                    if reversal_signal == 'Bearish Reversal':
+                        self.execute_short_trade(current_price, {'confidence': 75, 'mode': 'range-bound'})
+                        return True
+            
+            # Check if price is very near a strong demand zone (BUY signal)
+            demand_zones = [z for z in zones if z['type'] == 'demand']
+            for zone in demand_zones:
+                distance_pct = abs(current_price - zone['price_level']) / current_price * 100
+                
+                # Price must be very close to demand zone (within 0.15% for mean reversion)
+                if current_price <= zone['price_level'] * 1.002 and distance_pct <= 0.15:
+                    # Check for M1 bullish reversal confirmation
+                    reversal_signal = confirm_m1_reversal_signal(recent_m1_data)
+                    if reversal_signal == 'Bullish Reversal':
+                        self.execute_long_trade(current_price, {'confidence': 75, 'mode': 'range-bound'})
+                        return True
+            
+            return False
+            
+        except Exception as e:
+            print(f"✗ Error in range-bound strategy: {e}")
+            return False
+    
     
     def execute_long_trade(self, entry_price: float, signal: Dict):
         """
@@ -422,7 +452,8 @@ class PriceActionStrategy(Strategy):
                 )
                 self.last_trade_bar = len(self.data) - 1
                 
-                print(f"📈 LONG @ {entry_price:.5f} | SL: {risk_params['stop_loss']:.5f} | TP: {risk_params['take_profit']:.5f}")
+                mode = signal.get('mode', 'unknown')
+                print(f"📈 LONG ({mode}) @ {entry_price:.5f} | SL: {risk_params['stop_loss']:.5f} | TP: {risk_params['take_profit']:.5f}")
                 
         except Exception as e:
             print(f"✗ Error executing long trade: {e}")
@@ -443,7 +474,8 @@ class PriceActionStrategy(Strategy):
                 )
                 self.last_trade_bar = len(self.data) - 1
                 
-                print(f"📉 SHORT @ {entry_price:.5f} | SL: {risk_params['stop_loss']:.5f} | TP: {risk_params['take_profit']:.5f}")
+                mode = signal.get('mode', 'unknown')
+                print(f"📉 SHORT ({mode}) @ {entry_price:.5f} | SL: {risk_params['stop_loss']:.5f} | TP: {risk_params['take_profit']:.5f}")
                 
         except Exception as e:
             print(f"✗ Error executing short trade: {e}")

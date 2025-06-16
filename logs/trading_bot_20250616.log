@@ -8226,3 +8226,191 @@
 2025-06-16 19:17:49,830 - INFO -    Errors: 0
 2025-06-16 19:17:49,831 - INFO - ✅ Trading job completed successfully
 
+2025-06-16 19:18:49,978 - INFO - 
+================================================================================
+2025-06-16 19:18:49,979 - INFO - 🔄 TRADING JOB STARTED - 2025-06-16 19:18:49
+2025-06-16 19:18:49,979 - INFO - ================================================================================
+2025-06-16 19:18:49,980 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:18:50,087 - INFO - 💰 Account Status:
+2025-06-16 19:18:50,088 - INFO -    Balance: $69,351.78
+2025-06-16 19:18:50,088 - INFO -    Open Positions: 0
+2025-06-16 19:18:50,089 - INFO - 🎯 Scanning 5 instruments: EUR_USD, GBP_USD, USD_JPY, AUD_USD, USD_CAD
+2025-06-16 19:18:50,089 - INFO - 
+📊 Analyzing EUR_USD...
+2025-06-16 19:18:50,090 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:18:50,199 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:18:50,338 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:18:50,507 - INFO - ⏸️ No trade signal for EUR_USD
+2025-06-16 19:18:51,509 - INFO - 
+📊 Analyzing GBP_USD...
+2025-06-16 19:18:51,510 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:18:51,618 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:18:51,726 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:18:51,973 - INFO - ⏸️ No trade signal for GBP_USD
+2025-06-16 19:18:52,974 - INFO - 
+📊 Analyzing USD_JPY...
+2025-06-16 19:18:52,975 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:18:53,099 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:18:53,231 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:18:53,395 - INFO - ⏸️ No trade signal for USD_JPY
+2025-06-16 19:18:54,396 - INFO - 
+📊 Analyzing AUD_USD...
+2025-06-16 19:18:54,398 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:18:54,513 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:18:54,623 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:18:54,801 - INFO - ⏸️ No trade signal for AUD_USD
+2025-06-16 19:18:55,803 - INFO - 
+📊 Analyzing USD_CAD...
+2025-06-16 19:18:55,804 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:18:55,910 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:18:56,113 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:18:56,295 - INFO - ⏸️ No trade signal for USD_CAD
+2025-06-16 19:18:57,296 - INFO - 
+📋 TRADING JOB SUMMARY:
+2025-06-16 19:18:57,297 - INFO -    Duration: 7.2 seconds
+2025-06-16 19:18:57,298 - INFO -    Instruments Checked: 5
+2025-06-16 19:18:57,298 - INFO -    Trades Executed: 0
+2025-06-16 19:18:57,298 - INFO -    Errors: 0
+2025-06-16 19:18:57,299 - INFO - ✅ Trading job completed successfully
+
+2025-06-16 19:19:57,370 - INFO - 
+================================================================================
+2025-06-16 19:19:57,371 - INFO - 🔄 TRADING JOB STARTED - 2025-06-16 19:19:57
+2025-06-16 19:19:57,371 - INFO - ================================================================================
+2025-06-16 19:19:57,371 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:19:57,482 - INFO - 💰 Account Status:
+2025-06-16 19:19:57,483 - INFO -    Balance: $69,351.78
+2025-06-16 19:19:57,483 - INFO -    Open Positions: 0
+2025-06-16 19:19:57,484 - INFO - 🎯 Scanning 5 instruments: EUR_USD, GBP_USD, USD_JPY, AUD_USD, USD_CAD
+2025-06-16 19:19:57,484 - INFO - 
+📊 Analyzing EUR_USD...
+2025-06-16 19:19:57,485 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:19:57,592 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:19:57,708 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:19:57,933 - INFO - ⏸️ No trade signal for EUR_USD
+2025-06-16 19:19:58,935 - INFO - 
+📊 Analyzing GBP_USD...
+2025-06-16 19:19:58,937 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:19:59,052 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:19:59,164 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:19:59,351 - INFO - ⏸️ No trade signal for GBP_USD
+2025-06-16 19:20:00,352 - INFO - 
+📊 Analyzing USD_JPY...
+2025-06-16 19:20:00,354 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:20:00,482 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:20:00,600 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:20:00,799 - INFO - ⏸️ No trade signal for USD_JPY
+2025-06-16 19:20:01,801 - INFO - 
+📊 Analyzing AUD_USD...
+2025-06-16 19:20:01,803 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:20:01,948 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:20:02,112 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:20:02,508 - INFO - ⏸️ No trade signal for AUD_USD
+2025-06-16 19:20:03,510 - INFO - 
+📊 Analyzing USD_CAD...
+2025-06-16 19:20:03,512 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:20:03,628 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:20:03,758 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:20:03,959 - INFO - ⏸️ No trade signal for USD_CAD
+2025-06-16 19:20:04,960 - INFO - 
+📋 TRADING JOB SUMMARY:
+2025-06-16 19:20:04,962 - INFO -    Duration: 7.5 seconds
+2025-06-16 19:20:04,963 - INFO -    Instruments Checked: 5
+2025-06-16 19:20:04,963 - INFO -    Trades Executed: 0
+2025-06-16 19:20:04,963 - INFO -    Errors: 0
+2025-06-16 19:20:04,964 - INFO - ✅ Trading job completed successfully
+
+2025-06-16 19:21:05,101 - INFO - 
+================================================================================
+2025-06-16 19:21:05,102 - INFO - 🔄 TRADING JOB STARTED - 2025-06-16 19:21:05
+2025-06-16 19:21:05,102 - INFO - ================================================================================
+2025-06-16 19:21:05,103 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:21:05,213 - INFO - 💰 Account Status:
+2025-06-16 19:21:05,213 - INFO -    Balance: $69,351.78
+2025-06-16 19:21:05,214 - INFO -    Open Positions: 0
+2025-06-16 19:21:05,214 - INFO - 🎯 Scanning 5 instruments: EUR_USD, GBP_USD, USD_JPY, AUD_USD, USD_CAD
+2025-06-16 19:21:05,214 - INFO - 
+📊 Analyzing EUR_USD...
+2025-06-16 19:21:05,215 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:21:05,343 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:21:05,461 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:21:05,619 - INFO - ⏸️ No trade signal for EUR_USD
+2025-06-16 19:21:06,622 - INFO - 
+📊 Analyzing GBP_USD...
+2025-06-16 19:21:06,624 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:21:06,733 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:21:06,840 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:21:07,004 - INFO - ⏸️ No trade signal for GBP_USD
+2025-06-16 19:21:08,005 - INFO - 
+📊 Analyzing USD_JPY...
+2025-06-16 19:21:08,007 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:21:08,116 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:21:08,224 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:21:08,387 - INFO - ⏸️ No trade signal for USD_JPY
+2025-06-16 19:21:09,390 - INFO - 
+📊 Analyzing AUD_USD...
+2025-06-16 19:21:09,392 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:21:09,509 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:21:09,615 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:21:09,758 - INFO - ⏸️ No trade signal for AUD_USD
+2025-06-16 19:21:10,764 - INFO - 
+📊 Analyzing USD_CAD...
+2025-06-16 19:21:10,766 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:21:10,909 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:21:11,052 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:21:11,229 - INFO - ⏸️ No trade signal for USD_CAD
+2025-06-16 19:21:12,235 - INFO - 
+📋 TRADING JOB SUMMARY:
+2025-06-16 19:21:12,236 - INFO -    Duration: 7.0 seconds
+2025-06-16 19:21:12,237 - INFO -    Instruments Checked: 5
+2025-06-16 19:21:12,237 - INFO -    Trades Executed: 0
+2025-06-16 19:21:12,238 - INFO -    Errors: 0
+2025-06-16 19:21:12,238 - INFO - ✅ Trading job completed successfully
+
+2025-06-16 19:22:12,376 - INFO - 
+================================================================================
+2025-06-16 19:22:12,377 - INFO - 🔄 TRADING JOB STARTED - 2025-06-16 19:22:12
+2025-06-16 19:22:12,377 - INFO - ================================================================================
+2025-06-16 19:22:12,378 - INFO - performing request https://api-fxpractice.oanda.com/v3/accounts/101-004-15208160-001/summary
+2025-06-16 19:22:12,483 - INFO - 💰 Account Status:
+2025-06-16 19:22:12,484 - INFO -    Balance: $69,351.78
+2025-06-16 19:22:12,484 - INFO -    Open Positions: 0
+2025-06-16 19:22:12,484 - INFO - 🎯 Scanning 5 instruments: EUR_USD, GBP_USD, USD_JPY, AUD_USD, USD_CAD
+2025-06-16 19:22:12,484 - INFO - 
+📊 Analyzing EUR_USD...
+2025-06-16 19:22:12,485 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:22:12,590 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:22:12,695 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/EUR_USD/candles
+2025-06-16 19:22:12,861 - INFO - ⏸️ No trade signal for EUR_USD
+2025-06-16 19:22:13,869 - INFO - 
+📊 Analyzing GBP_USD...
+2025-06-16 19:22:13,871 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:22:13,979 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:22:14,088 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles
+2025-06-16 19:22:14,248 - INFO - ⏸️ No trade signal for GBP_USD
+2025-06-16 19:22:15,250 - INFO - 
+📊 Analyzing USD_JPY...
+2025-06-16 19:22:15,251 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:22:15,361 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:22:15,486 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_JPY/candles
+2025-06-16 19:22:15,638 - INFO - ⏸️ No trade signal for USD_JPY
+2025-06-16 19:22:16,643 - INFO - 
+📊 Analyzing AUD_USD...
+2025-06-16 19:22:16,644 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:22:16,802 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:22:16,908 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles
+2025-06-16 19:22:17,100 - INFO - ⏸️ No trade signal for AUD_USD
+2025-06-16 19:22:18,105 - INFO - 
+📊 Analyzing USD_CAD...
+2025-06-16 19:22:18,106 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:22:18,216 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:22:18,321 - INFO - performing request https://api-fxpractice.oanda.com/v3/instruments/USD_CAD/candles
+2025-06-16 19:22:18,485 - INFO - ⏸️ No trade signal for USD_CAD
+2025-06-16 19:22:19,491 - INFO - 
+📋 TRADING JOB SUMMARY:
+2025-06-16 19:22:19,492 - INFO -    Duration: 7.0 seconds
+2025-06-16 19:22:19,493 - INFO -    Instruments Checked: 5
+2025-06-16 19:22:19,493 - INFO -    Trades Executed: 0
+2025-06-16 19:22:19,493 - INFO -    Errors: 0
+2025-06-16 19:22:19,494 - INFO - ✅ Trading job completed successfully
+
