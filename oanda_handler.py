@@ -102,6 +102,102 @@ def get_historical_data(client, instrument, count=100, granularity='M5'):
         print(f"✗ Error fetching historical data for {instrument}: {e}")
         raise
 
+def get_instrument_specifications(client):
+    """
+    Fetches detailed instrument specifications including precision data.
+    
+    Returns:
+        dict: Mapping of instrument names to their specifications
+    """
+    try:
+        account_id = os.getenv('OANDA_ACCOUNT_ID')
+        if not account_id:
+            raise ValueError("OANDA_ACCOUNT_ID not found in environment variables")
+        
+        request = accounts.AccountInstruments(accountID=account_id)
+        response = client.request(request)
+        
+        instrument_specs = {}
+        for instrument in response['instruments']:
+            name = instrument.get('name', '')
+            instrument_specs[name] = {
+                'displayPrecision': instrument.get('displayPrecision', 5),
+                'pipLocation': instrument.get('pipLocation', -4),
+                'type': instrument.get('type', 'CURRENCY')
+            }
+        
+        return instrument_specs
+        
+    except Exception as e:
+        print(f"✗ Error fetching instrument specifications: {e}")
+        # Return fallback precision mapping
+        return get_fallback_precision_mapping()
+
+def get_fallback_precision_mapping():
+    """
+    Returns a fallback precision mapping for common instruments.
+    Based on standard OANDA precision requirements.
+    """
+    return {
+        # Major pairs - 5 decimal places
+        'EUR_USD': {'displayPrecision': 5, 'pipLocation': -4},
+        'GBP_USD': {'displayPrecision': 5, 'pipLocation': -4},
+        'AUD_USD': {'displayPrecision': 5, 'pipLocation': -4},
+        'USD_CAD': {'displayPrecision': 5, 'pipLocation': -4},
+        'USD_CHF': {'displayPrecision': 5, 'pipLocation': -4},
+        'NZD_USD': {'displayPrecision': 5, 'pipLocation': -4},
+        
+        # JPY pairs - 3 decimal places
+        'USD_JPY': {'displayPrecision': 3, 'pipLocation': -2},
+        'EUR_JPY': {'displayPrecision': 3, 'pipLocation': -2},
+        'GBP_JPY': {'displayPrecision': 3, 'pipLocation': -2},
+        'AUD_JPY': {'displayPrecision': 3, 'pipLocation': -2},
+        'CAD_JPY': {'displayPrecision': 3, 'pipLocation': -2},
+        'CHF_JPY': {'displayPrecision': 3, 'pipLocation': -2},
+        'NZD_JPY': {'displayPrecision': 3, 'pipLocation': -2},
+        'ZAR_JPY': {'displayPrecision': 3, 'pipLocation': -2},
+        
+        # Cross pairs and others - 4-5 decimal places
+        'EUR_GBP': {'displayPrecision': 5, 'pipLocation': -4},
+        'EUR_AUD': {'displayPrecision': 5, 'pipLocation': -4},
+        'GBP_AUD': {'displayPrecision': 5, 'pipLocation': -4},
+        'AUD_SGD': {'displayPrecision': 4, 'pipLocation': -4},
+        'NZD_SGD': {'displayPrecision': 4, 'pipLocation': -4},
+        'EUR_SGD': {'displayPrecision': 4, 'pipLocation': -4},
+        'GBP_SGD': {'displayPrecision': 4, 'pipLocation': -4},
+        'USD_SGD': {'displayPrecision': 4, 'pipLocation': -4},
+        'USD_CNH': {'displayPrecision': 5, 'pipLocation': -4},
+        'USD_HKD': {'displayPrecision': 4, 'pipLocation': -4},
+        'USD_MXN': {'displayPrecision': 5, 'pipLocation': -4},
+        'USD_NOK': {'displayPrecision': 5, 'pipLocation': -4},
+        'USD_THB': {'displayPrecision': 3, 'pipLocation': -2},
+        'USD_ZAR': {'displayPrecision': 5, 'pipLocation': -4}
+    }
+
+def format_price_for_instrument(price, instrument, instrument_specs=None):
+    """
+    Format a price according to the instrument's precision requirements.
+    
+    Args:
+        price (float): The price to format
+        instrument (str): The instrument name (e.g., 'EUR_USD')
+        instrument_specs (dict, optional): Instrument specifications mapping
+        
+    Returns:
+        str: Properly formatted price string
+    """
+    if instrument_specs is None:
+        instrument_specs = get_fallback_precision_mapping()
+    
+    # Get precision for this instrument
+    spec = instrument_specs.get(instrument, {'displayPrecision': 5})
+    precision = spec.get('displayPrecision', 5)
+    
+    # Format price with the correct number of decimal places
+    formatted_price = f"{price:.{precision}f}"
+    
+    return formatted_price
+
 def place_market_order(client, instrument, units, stop_loss_price=None, take_profit_price=None):
     """
     Places a market order with optional stop loss and take profit.
@@ -122,6 +218,9 @@ def place_market_order(client, instrument, units, stop_loss_price=None, take_pro
         if not account_id:
             raise ValueError("OANDA_ACCOUNT_ID not found in environment variables")
         
+        # Get instrument specifications for precise price formatting
+        instrument_specs = get_instrument_specifications(client)
+        
         # Create market order request
         order_data = {
             "instrument": instrument,
@@ -130,15 +229,17 @@ def place_market_order(client, instrument, units, stop_loss_price=None, take_pro
         
         # Add stop loss if provided
         if stop_loss_price is not None:
+            formatted_sl_price = format_price_for_instrument(stop_loss_price, instrument, instrument_specs)
             order_data["stopLossOnFill"] = {
-                "price": str(stop_loss_price),
+                "price": formatted_sl_price,
                 "timeInForce": "GTC"
             }
         
         # Add take profit if provided
         if take_profit_price is not None:
+            formatted_tp_price = format_price_for_instrument(take_profit_price, instrument, instrument_specs)
             order_data["takeProfitOnFill"] = {
-                "price": str(take_profit_price),
+                "price": formatted_tp_price,
                 "timeInForce": "GTC"
             }
         
