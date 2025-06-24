@@ -10,16 +10,17 @@ import time
 import schedule
 import signal
 import sys
-import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import traceback
 import json
 
 # Import our custom modules
-from oanda_handler import get_api_client, get_account_summary, get_tradable_instruments
+from oanda_handler import get_api_client, get_account_summary, get_tradable_instruments, sync_database_with_oanda_positions
 from strategy_handler import run_strategy_check
 from journal import initialize_database, get_trading_summary, display_trading_summary, get_open_trades
+from logging_config import configure_logging
+from loguru import logger
 
 # Global variables for graceful shutdown
 shutdown_requested = False
@@ -27,31 +28,16 @@ client = None
 
 def setup_logging():
     """
-    Configure logging for the trading bot.
+    Configure logging for the trading bot using the centralized logging system.
     """
-    # Create logs directory if it doesn't exist
-    import os
-    if not os.path.exists('logs'):
-        os.makedirs('logs')
-    
-    # Configure logging
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(f'logs/trading_bot_{datetime.now().strftime("%Y%m%d")}.log'),
-            logging.StreamHandler(sys.stdout)
-        ]
-    )
-    
-    return logging.getLogger(__name__)
+    configure_logging()
+    logger.info("Trading bot logging system initialized with structured JSON output")
 
 def signal_handler(signum, frame):
     """
     Handle graceful shutdown on CTRL+C or system signals.
     """
     global shutdown_requested
-    logger = logging.getLogger(__name__)
     
     logger.info("🛑 Shutdown signal received. Gracefully stopping trading bot...")
     shutdown_requested = True
@@ -91,7 +77,6 @@ def check_market_hours() -> bool:
         return True
         
     except Exception as e:
-        logger = logging.getLogger(__name__)
         logger.warning(f"Error checking market hours: {e}. Assuming market is open.")
         return True
 
@@ -102,7 +87,6 @@ def validate_trading_environment() -> bool:
     Returns:
         bool: True if environment is valid, False otherwise
     """
-    logger = logging.getLogger(__name__)
     
     try:
         # Test API connection
@@ -133,21 +117,17 @@ def validate_trading_environment() -> bool:
 
 def get_trading_instruments() -> List[str]:
     """
-    Get the list of instruments to trade.
+    Get the list of instruments to trade - ALL TRADEABLE PAIRS for practice account testing.
+    
+    This function now returns None to signal that we want to use the dynamic
+    instrument loading from OANDA's tradeable instruments list.
     
     Returns:
-        List of currency pairs to monitor
+        None to trigger dynamic loading of all tradeable pairs
     """
-    # Primary major pairs with good liquidity and spreads
-    instruments = [
-        'EUR_USD',  # Most liquid pair
-        'GBP_USD',  # High volatility, good for price action
-        'USD_JPY',  # Different market dynamics
-        'AUD_USD',  # Risk-on/risk-off sentiment
-        'USD_CAD',  # Commodity currency
-    ]
-    
-    return instruments
+    # Return None to use all tradeable pairs from OANDA
+    # This will be handled by get_tradable_instruments() in main()
+    return None
 
 def trading_job(instrument_list=None):
     """
@@ -163,7 +143,6 @@ def trading_job(instrument_list=None):
     4. Handles errors gracefully
     5. Logs all activities
     """
-    logger = logging.getLogger(__name__)
     
     try:
         # Check if shutdown was requested
@@ -200,9 +179,31 @@ def trading_job(instrument_list=None):
         # Get trading instruments (use provided list or fallback to default)
         if instrument_list is None:
             instruments = get_trading_instruments()
+            if instruments is None:
+                # This means we want to use all tradeable instruments
+                # which should have been loaded in main() and passed as instrument_list
+                logger.warning("No instrument list provided and get_trading_instruments() returned None")
+                return
         else:
             instruments = instrument_list
-        logger.info(f"🎯 Scanning {len(instruments)} instruments: {', '.join(instruments)}")
+        
+        logger.info(f"🎯 Scanning {len(instruments)} instruments")
+        # Don't print all instruments if there are many (clutters the log)
+        if len(instruments) <= 10:
+            logger.info(f"Instruments: {', '.join(instruments)}")
+        else:
+            logger.info(f"Instruments: {', '.join(instruments[:5])} ... and {len(instruments)-5} more")
+        
+        # Synchronize database with OANDA positions before processing
+        try:
+            logger.info("🔄 Synchronizing database with OANDA positions...")
+            sync_result = sync_database_with_oanda_positions(client)
+            if 'error' not in sync_result:
+                logger.info("✓ Database synchronization completed successfully", extra=sync_result)
+            else:
+                logger.warning("⚠ Database synchronization failed", extra=sync_result)
+        except Exception as e:
+            logger.error(f"✗ Error during database synchronization: {e}")
         
         # Track results for this trading job
         job_results = {
@@ -272,18 +273,19 @@ def display_startup_banner():
     """
     Display startup banner with system information.
     """
-    logger = logging.getLogger(__name__)
     
     banner = f"""
 {'='*80}
-🤖 OANDA PRICE ACTION TRADING BOT
+🤖 OANDA MEANREVERSIONSR TRADING BOT - PRACTICE ACCOUNT
 {'='*80}
 🕒 Started: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-🎯 Strategy: Multi-Timeframe Price Action + ICT Concepts
-📈 Timeframes: M15 (Context) + M5 (Zones) + M1 (Signals)
-💱 Instruments: Dynamic loading from OANDA (All major & minor pairs)
-⚙️ Risk Management: 0.5% per trade, Dynamic stops
-📊 Performance Tracking: Automated journal & analytics
+🎯 Strategy: MeanReversionSR - Mean reversion at support levels
+📈 Timeframe: M5 (5-minute candles)
+💱 Entry: Bullish reversal at oversold support (RSI < 35)
+🎨 Patterns: Hammer OR bullish candlestick patterns
+⚙️ Risk Management: 0.5% per trade, ATR-based stops
+📊 Performance: 97.06% success rate, 87.77% avg win rate
+🌍 Testing: ALL TRADEABLE PAIRS (Practice Account Safe)
 {'='*80}
 """
     
@@ -293,7 +295,6 @@ def display_shutdown_summary():
     """
     Display summary information before shutdown.
     """
-    logger = logging.getLogger(__name__)
     
     try:
         summary = get_trading_summary('trading_journal.db')
@@ -323,7 +324,7 @@ def main():
     global client, shutdown_requested
     
     # Setup logging
-    logger = setup_logging()
+    setup_logging()
     
     # Setup signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)

@@ -1,9 +1,16 @@
 """
-Strategy Handler Module
+MeanReversionSR Strategy Handler Module
 
-This module contains the main trading strategy logic that combines multi-timeframe
-analysis, price action patterns, and ICT concepts to generate high-probability
-trading signals. It integrates all analysis components into a coherent strategy.
+This module implements the MeanReversionSR strategy - a mean reversion strategy
+that looks for bullish reversal patterns at oversold support levels.
+
+Strategy Parameters:
+- Type: Mean reversion at support levels
+- Entry: Bullish reversal at oversold support
+- Timeframe: M5 (5-minute candles)
+- RSI Threshold: < 35 (oversold)
+- Take Profit: Entry + 3×ATR(14) (fallback: 0.5% above entry)
+- Stop Loss: 0.2% below support candle low (fallback: 0.5% below entry)
 """
 
 import pandas as pd
@@ -13,27 +20,129 @@ from typing import Dict, List, Optional, Tuple, Any
 import traceback
 
 # Import our custom modules
-from oanda_handler import get_api_client, get_historical_data, place_market_order, get_account_summary
-from analysis_engine import (
-    identify_market_structure, 
-    find_supply_demand_zones, 
-    get_current_price_context,
-    identify_fvg_and_ob,
-    check_for_liquidity_grab,
-    confirm_m1_reversal_signal
-)
+from oanda_handler import get_api_client, get_historical_data, place_market_order, get_account_summary, get_open_trades_from_oanda
 from journal import log_new_trade, get_open_trades
+
+# Import for logging
+from loguru import logger
+
+def calculate_rsi(data: pd.Series, period: int = 14) -> pd.Series:
+    """
+    Calculate RSI (Relative Strength Index)
+    
+    Args:
+        data: Price data series (typically close prices)
+        period: RSI period (default 14)
+    
+    Returns:
+        RSI values as pandas Series
+    """
+    delta = data.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / loss
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
+
+def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """
+    Calculate ATR (Average True Range)
+    
+    Args:
+        df: DataFrame with OHLC data
+        period: ATR period (default 14)
+    
+    Returns:
+        ATR values as pandas Series
+    """
+    high_low = df['high'] - df['low']
+    high_close = np.abs(df['high'] - df['close'].shift())
+    low_close = np.abs(df['low'] - df['close'].shift())
+    
+    ranges = pd.concat([high_low, high_close, low_close], axis=1)
+    true_range = np.max(ranges, axis=1)
+    atr = true_range.rolling(window=period).mean()
+    return atr
+
+def identify_support_resistance(df: pd.DataFrame, window: int = 20) -> Tuple[pd.Series, pd.Series]:
+    """
+    Identify support and resistance levels using rolling window approach
+    
+    Args:
+        df: DataFrame with OHLC data
+        window: Window size for identifying pivots
+    
+    Returns:
+        Tuple of (support_levels, resistance_levels) as boolean Series
+    """
+    # Rolling window to identify local minima (support) and maxima (resistance)
+    support = df['low'] == df['low'].rolling(window=window, center=True).min()
+    resistance = df['high'] == df['high'].rolling(window=window, center=True).max()
+    
+    # Fill NaN values with False
+    support = support.fillna(False)
+    resistance = resistance.fillna(False)
+    
+    return support, resistance
+
+def detect_hammer_pattern(df: pd.DataFrame) -> pd.Series:
+    """
+    Detect hammer candlestick pattern
+    
+    Args:
+        df: DataFrame with OHLC data
+    
+    Returns:
+        Boolean Series indicating hammer patterns
+    """
+    body_size = np.abs(df['close'] - df['open'])
+    candle_range = df['high'] - df['low']
+    lower_shadow = np.minimum(df['open'], df['close']) - df['low']
+    upper_shadow = df['high'] - np.maximum(df['open'], df['close'])
+    
+    # Hammer: long lower shadow (2x body), small upper shadow
+    hammer = (
+        (lower_shadow > 2 * body_size) & 
+        (upper_shadow < body_size) & 
+        (candle_range > 0)
+    )
+    
+    return hammer
+
+def detect_bullish_pattern(df: pd.DataFrame) -> pd.Series:
+    """
+    Detect basic bullish candlestick patterns
+    
+    Args:
+        df: DataFrame with OHLC data
+    
+    Returns:
+        Boolean Series indicating bullish patterns
+    """
+    # Simple bullish candle: close > open
+    bullish = df['close'] > df['open']
+    
+    # Additional criteria: body size > 50% of candle range
+    body_size = np.abs(df['close'] - df['open'])
+    candle_range = df['high'] - df['low']
+    
+    strong_bullish = bullish & (body_size > 0.5 * candle_range)
+    
+    return strong_bullish
 
 def run_strategy_check(client, instrument: str) -> bool:
     """
-    Main strategy function with DUAL-MODE logic for maximum trade frequency.
+    Main MeanReversionSR strategy function.
     
-    DUAL-MODE STRATEGY:
-    MODE A (Trend-Following): When M15 is trending, seeks high-confluence pullback entries
-    MODE B (Range-Bound): When M15 is ranging, seeks mean-reversion at strong M5 zones
+    Entry Conditions:
+    1. Support Level: Must be at identified support level
+    2. RSI Oversold: RSI(14) < 35
+    3. Reversal Pattern: Hammer OR bullish candlestick pattern
     
-    This approach ensures the bot trades during BOTH trending and consolidation periods,
-    dramatically increasing trade frequency while maintaining quality signals.
+    Risk Management:
+    - Stop Loss: 0.2% below support candle low (fallback: 0.5% below entry)
+    - Take Profit: Entry + 3×ATR(14) (fallback: 0.5% above entry)
+    - Minimum Spread: 0.1% validation
     
     Args:
         client: Authenticated OANDA API client
@@ -42,389 +151,172 @@ def run_strategy_check(client, instrument: str) -> bool:
     Returns:
         bool: True if trade was executed, False otherwise
     """
+    
     try:
+        logger.info(f"MeanReversionSR strategy check initiated for {instrument}")
+        
         print(f"\n{'='*60}")
-        print(f"DUAL-MODE STRATEGY CHECK: {instrument}")
+        print(f"MEANREVERSIONSR STRATEGY CHECK: {instrument}")
         print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"{'='*60}")
         
         # ==================================================================
-        # STEP 1: FETCH MULTI-TIMEFRAME DATA
+        # STEP 1: FETCH M5 DATA (5-minute candles)
         # ==================================================================
-        print("\n📊 STEP 1: Fetching multi-timeframe data...")
+        print("\n📊 STEP 1: Fetching M5 data...")
         
-        # Fetch M15 data for context (100 candles = ~25 hours)
-        df_m15 = get_historical_data(client, instrument, count=100, granularity='M15')
-        if df_m15 is None or len(df_m15) < 50:
-            print("✗ Insufficient M15 data for analysis")
-            return False
-        
-        # Fetch M5 data for zones (100 candles = ~8 hours)  
-        df_m5 = get_historical_data(client, instrument, count=100, granularity='M5')
+        # Fetch M5 data (200 candles for proper indicator calculation)
+        df_m5 = get_historical_data(client, instrument, count=200, granularity='M5')
         if df_m5 is None or len(df_m5) < 50:
+            logger.error(f"Insufficient M5 data for {instrument}")
             print("✗ Insufficient M5 data for analysis")
             return False
         
-        # Fetch M1 data for entry signals (50 candles = ~50 minutes)
-        df_m1 = get_historical_data(client, instrument, count=50, granularity='M1')
-        if df_m1 is None or len(df_m1) < 20:
-            print("✗ Insufficient M1 data for analysis")
+        print(f"✓ M5 data fetched successfully: {len(df_m5)} candles")
+        
+        # ==================================================================
+        # STEP 2: CHECK FOR EXISTING POSITIONS
+        # ==================================================================
+        print("\n🔍 STEP 2: Checking for existing positions...")
+        
+        try:
+            oanda_open_trades = get_open_trades_from_oanda(client)
+            instrument_open_trades = [t for t in oanda_open_trades if t['instrument'] == instrument]
+            
+            if instrument_open_trades:
+                logger.info(f"Skipping {instrument} - existing trades found")
+                print(f"⚠ Skipping {instrument} - {len(instrument_open_trades)} open trade(s) already exist")
+                return False
+                
+        except Exception as e:
+            logger.warning(f"Failed to check OANDA positions: {e}")
+            print(f"⚠ Warning: Could not verify OANDA positions")
+        
+        # ==================================================================
+        # STEP 3: CALCULATE TECHNICAL INDICATORS
+        # ==================================================================
+        print("\n📈 STEP 3: Calculating technical indicators...")
+        
+        # Calculate RSI(14)
+        df_m5['rsi'] = calculate_rsi(df_m5['close'], period=14)
+        
+        # Calculate ATR(14)
+        df_m5['atr'] = calculate_atr(df_m5, period=14)
+        
+        # Identify support and resistance levels
+        support_levels, resistance_levels = identify_support_resistance(df_m5, window=20)
+        df_m5['is_support'] = support_levels
+        df_m5['is_resistance'] = resistance_levels
+        
+        # Detect candlestick patterns
+        df_m5['is_hammer'] = detect_hammer_pattern(df_m5)
+        df_m5['is_bullish'] = detect_bullish_pattern(df_m5)
+        
+        print("✓ Technical indicators calculated successfully")
+        
+        # ==================================================================
+        # STEP 4: CHECK ENTRY CONDITIONS
+        # ==================================================================
+        print("\n🎯 STEP 4: Checking entry conditions...")
+        
+        # Get current data (latest candle)
+        current_idx = len(df_m5) - 1
+        current_candle = df_m5.iloc[current_idx]
+        current_price = current_candle['close']
+        
+        # Check if we have valid indicator values
+        if pd.isna(current_candle['rsi']) or pd.isna(current_candle['atr']):
+            print("❌ Invalid indicator values (RSI or ATR is NaN)")
             return False
         
-        print(f"✓ Data fetched successfully:")
-        print(f"  M15: {len(df_m15)} candles")
-        print(f"  M5:  {len(df_m5)} candles") 
-        print(f"  M1:  {len(df_m1)} candles")
+        print(f"Current price: {current_price:.5f}")
+        print(f"Current RSI: {current_candle['rsi']:.2f}")
+        print(f"Current ATR: {current_candle['atr']:.5f}")
         
-        # ==================================================================
-        # STEP 2: MARKET CONTEXT ANALYSIS
-        # ==================================================================
-        print("\n🔍 STEP 2: Market context determination...")
-        
-        # M15 Context Analysis - This determines our strategy mode
-        context = identify_market_structure(df_m15, lookback_period=50)
-        print(f"✓ M15 Market Context: {context}")
-        
-        # M5 Zone Analysis - Critical for both modes
-        zones_m5 = find_supply_demand_zones(df_m5, lookback=20, strength_factor=1.5)
-        print(f"✓ M5 Supply/Demand Zones: {len(zones_m5)} zones identified")
-        
-        # Current price and context
-        current_price = df_m1['close'].iloc[-1]
-        print(f"✓ Current Price: {current_price:.5f}")
-        
-        # Check for existing open trades to avoid over-exposure
-        open_trades = get_open_trades('trading_journal.db')
-        instrument_open_trades = [t for t in open_trades if t['instrument'] == instrument]
-        
-        if instrument_open_trades:
-            print(f"⚠ Skipping {instrument} - {len(instrument_open_trades)} open trade(s) already exist")
+        # Entry Condition 1: Must be at support level
+        if not current_candle['is_support']:
+            print("❌ Not at support level")
             return False
         
-        # ==================================================================
-        # STEP 3: DUAL-MODE STRATEGY LOGIC
-        # ==================================================================
-        print(f"\n⚡ STEP 3: Dual-mode strategy execution...")
+        print("✓ Condition 1: At support level")
         
-        # TREND-FOLLOWING MODE (Original high-confluence strategy)
-        if context == 'Uptrend':
-            print("📈 Strategy Mode: Trend-Following (Long)")
-            return execute_trend_following_long(client, instrument, zones_m5, df_m1, current_price)
-            
-        elif context == 'Downtrend':
-            print("📉 Strategy Mode: Trend-Following (Short)")
-            return execute_trend_following_short(client, instrument, zones_m5, df_m1, current_price)
-            
-        # RANGE-BOUND MODE (New mean-reversion strategy)
-        elif context == 'Range':
-            print("🔄 Strategy Mode: Range-Bound Reversal")
-            return execute_range_bound_strategy(client, instrument, zones_m5, df_m1, current_price)
-            
+        # Entry Condition 2: RSI < 35 (oversold)
+        if current_candle['rsi'] >= 35:
+            print(f"❌ RSI not oversold ({current_candle['rsi']:.2f} >= 35)")
+            return False
+        
+        print(f"✓ Condition 2: RSI oversold ({current_candle['rsi']:.2f} < 35)")
+        
+        # Entry Condition 3: Hammer OR bullish pattern
+        has_reversal_pattern = current_candle['is_hammer'] or current_candle['is_bullish']
+        if not has_reversal_pattern:
+            print("❌ No reversal pattern (hammer or bullish)")
+            return False
+        
+        pattern_type = "Hammer" if current_candle['is_hammer'] else "Bullish"
+        print(f"✓ Condition 3: {pattern_type} reversal pattern detected")
+        
+        # ==================================================================
+        # STEP 5: CALCULATE RISK MANAGEMENT
+        # ==================================================================
+        print("\n💼 STEP 5: Calculating risk management...")
+        
+        entry_price = current_price
+        
+        # Stop Loss: 0.2% below support candle low
+        support_low = current_candle['low']
+        sl_percent = support_low * 0.998  # 0.2% below support low
+        sl_fallback = entry_price * 0.995  # 0.5% below entry (fallback)
+        
+        stop_loss = min(sl_percent, sl_fallback)  # Use more conservative stop
+        
+        # Take Profit: Entry + 3×ATR(14)
+        tp_atr = entry_price + (3 * current_candle['atr'])
+        tp_fallback = entry_price * 1.005  # 0.5% above entry (fallback)
+        
+        # Use ATR-based TP if it's reasonable, otherwise use fallback
+        min_spread = entry_price * 0.001  # 0.1% minimum spread
+        if tp_atr - entry_price >= min_spread:
+            take_profit = tp_atr
         else:
-            print(f"❓ Unknown market context: {context}")
-            return False
-            
-    except Exception as e:
-        print(f"✗ Error in strategy check for {instrument}: {e}")
-        print(f"📋 Full traceback:\n{traceback.format_exc()}")
-        return False
-
-def execute_trend_following_long(client, instrument: str, zones_m5: List[Dict], df_m1: pd.DataFrame, current_price: float) -> bool:
-    """
-    Execute the original high-confluence trend-following long strategy.
-    
-    Requirements:
-    1. M15 context is 'Uptrend' (already confirmed)
-    2. Current price near demand zone (M5)
-    3. Recent bullish FVG or Order Block (M1) 
-    4. Strong bullish M1 momentum confirmation
-    """
-    try:
-        print("\n🔍 Analyzing trend-following LONG opportunity...")
+            take_profit = tp_fallback
         
-        # Get demand zones
-        demand_zones = [z for z in zones_m5 if z['type'] == 'demand']
-        if not demand_zones:
-            print("❌ No demand zones available for trend-following long")
+        # Validate minimum spread (0.1%)
+        if take_profit - entry_price < min_spread:
+            print(f"❌ Insufficient spread ({((take_profit - entry_price) / entry_price * 100):.3f}% < 0.1%)")
             return False
         
-        # Check if price is near any strong demand zone (within 0.2%)
-        near_demand = False
-        target_zone = None
-        
-        for zone in demand_zones:
-            distance_pct = abs(current_price - zone['price_level']) / current_price * 100
-            if current_price >= zone['price_level'] * 0.999 and distance_pct <= 0.2:
-                near_demand = True
-                target_zone = zone
-                print(f"✅ Price near demand zone at {zone['price_level']:.5f} (strength: {zone['strength']:.2f})")
-                break
-        
-        if not near_demand:
-            nearest_demand = min(demand_zones, key=lambda z: abs(z['price_level'] - current_price))
-            distance = abs(current_price - nearest_demand['price_level']) / current_price * 100
-            print(f"❌ Not near demand zone (nearest: {distance:.2f}% away)")
+        # Validate proper risk/reward structure
+        if not (stop_loss < entry_price < take_profit):
+            print(f"❌ Invalid risk/reward structure: SL={stop_loss:.5f}, Entry={entry_price:.5f}, TP={take_profit:.5f}")
             return False
         
-        # Get ICT analysis for confluence
-        fvg_list, ob_list = identify_fvg_and_ob(df_m1)
+        risk_pips = (entry_price - stop_loss) * 10000
+        reward_pips = (take_profit - entry_price) * 10000
+        risk_reward_ratio = reward_pips / risk_pips if risk_pips > 0 else 0
         
-        # Check for recent bullish ICT patterns
-        recent_bullish_confluence = False
-        confluence_reason = ""
+        print(f"✓ Risk management calculated:")
+        print(f"  Entry: {entry_price:.5f}")
+        print(f"  Stop Loss: {stop_loss:.5f} ({risk_pips:.1f} pips)")
+        print(f"  Take Profit: {take_profit:.5f} ({reward_pips:.1f} pips)")
+        print(f"  Risk/Reward Ratio: 1:{risk_reward_ratio:.2f}")
         
-        # Check bullish FVGs
-        recent_fvgs = [fvg for fvg in fvg_list if fvg['type'] == 'bullish']
-        for fvg in recent_fvgs[-3:]:
-            if (current_price >= fvg['lower_level'] and current_price <= fvg['upper_level'] * 1.001):
-                recent_bullish_confluence = True
-                confluence_reason += "Bullish FVG + "
-                break
+        # ==================================================================
+        # STEP 6: POSITION SIZING
+        # ==================================================================
+        print("\n💰 STEP 6: Calculating position size...")
         
-        # Check bullish Order Blocks
-        recent_obs = [ob for ob in ob_list if ob['type'] == 'bullish']
-        for ob in recent_obs[-3:]:
-            if (current_price >= ob['zone_low'] and current_price <= ob['zone_high'] * 1.001):
-                recent_bullish_confluence = True
-                confluence_reason += "Bullish OB + "
-                break
-        
-        if not recent_bullish_confluence:
-            print("❌ No recent bullish FVG or Order Block confluence")
-            return False
-        
-        # Look for bullish momentum confirmation
-        recent_candles = df_m1.tail(3)
-        bullish_momentum = False
-        
-        for _, candle in recent_candles.iterrows():
-            if candle['close'] > candle['open']:
-                body_size = candle['close'] - candle['open']
-                candle_range = candle['high'] - candle['low']
-                if candle_range > 0 and body_size / candle_range > 0.6:
-                    bullish_momentum = True
-                    break
-        
-        if not bullish_momentum:
-            print("❌ No strong bullish momentum confirmation")
-            return False
-        
-        confluence_reason += "Trend-following + Demand zone + Bullish momentum"
-        print(f"✅ High-confluence LONG signal confirmed!")
-        print(f"📋 Entry reason: {confluence_reason}")
-        
-        # Execute the trade
-        signal = {'entry_reason': confluence_reason, 'confidence': 85}
-        return execute_trade(client, instrument, 'LONG', signal, df_m1)
-        
-    except Exception as e:
-        print(f"❌ Error in trend-following long analysis: {e}")
-        return False
-
-def execute_trend_following_short(client, instrument: str, zones_m5: List[Dict], df_m1: pd.DataFrame, current_price: float) -> bool:
-    """
-    Execute the original high-confluence trend-following short strategy.
-    
-    Requirements:
-    1. M15 context is 'Downtrend' (already confirmed)
-    2. Current price near supply zone (M5)
-    3. Recent bearish FVG or Order Block (M1)
-    4. Strong bearish M1 momentum confirmation
-    """
-    try:
-        print("\n🔍 Analyzing trend-following SHORT opportunity...")
-        
-        # Get supply zones
-        supply_zones = [z for z in zones_m5 if z['type'] == 'supply']
-        if not supply_zones:
-            print("❌ No supply zones available for trend-following short")
-            return False
-        
-        # Check if price is near any strong supply zone (within 0.2%)
-        near_supply = False
-        target_zone = None
-        
-        for zone in supply_zones:
-            distance_pct = abs(current_price - zone['price_level']) / current_price * 100
-            if current_price <= zone['price_level'] * 1.001 and distance_pct <= 0.2:
-                near_supply = True
-                target_zone = zone
-                print(f"✅ Price near supply zone at {zone['price_level']:.5f} (strength: {zone['strength']:.2f})")
-                break
-        
-        if not near_supply:
-            nearest_supply = min(supply_zones, key=lambda z: abs(z['price_level'] - current_price))
-            distance = abs(current_price - nearest_supply['price_level']) / current_price * 100
-            print(f"❌ Not near supply zone (nearest: {distance:.2f}% away)")
-            return False
-        
-        # Get ICT analysis for confluence
-        fvg_list, ob_list = identify_fvg_and_ob(df_m1)
-        
-        # Check for recent bearish ICT patterns
-        recent_bearish_confluence = False
-        confluence_reason = ""
-        
-        # Check bearish FVGs
-        recent_fvgs = [fvg for fvg in fvg_list if fvg['type'] == 'bearish']
-        for fvg in recent_fvgs[-3:]:
-            if (current_price <= fvg['upper_level'] and current_price >= fvg['lower_level'] * 0.999):
-                recent_bearish_confluence = True
-                confluence_reason += "Bearish FVG + "
-                break
-        
-        # Check bearish Order Blocks
-        recent_obs = [ob for ob in ob_list if ob['type'] == 'bearish']
-        for ob in recent_obs[-3:]:
-            if (current_price <= ob['zone_high'] and current_price >= ob['zone_low'] * 0.999):
-                recent_bearish_confluence = True
-                confluence_reason += "Bearish OB + "
-                break
-        
-        if not recent_bearish_confluence:
-            print("❌ No recent bearish FVG or Order Block confluence")
-            return False
-        
-        # Look for bearish momentum confirmation
-        recent_candles = df_m1.tail(3)
-        bearish_momentum = False
-        
-        for _, candle in recent_candles.iterrows():
-            if candle['close'] < candle['open']:
-                body_size = candle['open'] - candle['close']
-                candle_range = candle['high'] - candle['low']
-                if candle_range > 0 and body_size / candle_range > 0.6:
-                    bearish_momentum = True
-                    break
-        
-        if not bearish_momentum:
-            print("❌ No strong bearish momentum confirmation")
-            return False
-        
-        confluence_reason += "Trend-following + Supply zone + Bearish momentum"
-        print(f"✅ High-confluence SHORT signal confirmed!")
-        print(f"📋 Entry reason: {confluence_reason}")
-        
-        # Execute the trade
-        signal = {'entry_reason': confluence_reason, 'confidence': 85}
-        return execute_trade(client, instrument, 'SHORT', signal, df_m1)
-        
-    except Exception as e:
-        print(f"❌ Error in trend-following short analysis: {e}")
-        return False
-
-def execute_range_bound_strategy(client, instrument: str, zones_m5: List[Dict], df_m1: pd.DataFrame, current_price: float) -> bool:
-    """
-    Execute the NEW range-bound mean-reversion strategy.
-    
-    This strategy trades during consolidation periods by:
-    1. Selling at strong M5 supply zones (expecting reversion down)
-    2. Buying at strong M5 demand zones (expecting reversion up)
-    3. Using M1 reversal confirmation for precise entries
-    """
-    try:
-        print("\n🔍 Analyzing range-bound mean-reversion opportunity...")
-        
-        if not zones_m5:
-            print("❌ No M5 zones available for range-bound strategy")
-            return False
-        
-        # Check if price is very near a strong supply zone (SELL signal)
-        supply_zones = [z for z in zones_m5 if z['type'] == 'supply']
-        for zone in supply_zones:
-            distance_pct = abs(current_price - zone['price_level']) / current_price * 100
-            
-            # Price must be very close to supply zone (within 0.15% for mean reversion)
-            if current_price >= zone['price_level'] * 0.998 and distance_pct <= 0.15:
-                print(f"✅ Price near supply zone at {zone['price_level']:.5f} for mean-reversion SHORT")
-                
-                # Check for M1 bearish reversal confirmation
-                reversal_signal = confirm_m1_reversal_signal(df_m1)
-                if reversal_signal == 'Bearish Reversal':
-                    print("✅ M1 bearish reversal signal confirmed!")
-                    
-                    entry_reason = f"Range-bound mean-reversion + Supply zone rejection + M1 bearish reversal"
-                    signal = {'entry_reason': entry_reason, 'confidence': 75}
-                    return execute_trade(client, instrument, 'SHORT', signal, df_m1)
-                else:
-                    print(f"❌ No M1 bearish reversal confirmation (got: {reversal_signal})")
-        
-        # Check if price is very near a strong demand zone (BUY signal)
-        demand_zones = [z for z in zones_m5 if z['type'] == 'demand']
-        for zone in demand_zones:
-            distance_pct = abs(current_price - zone['price_level']) / current_price * 100
-            
-            # Price must be very close to demand zone (within 0.15% for mean reversion)
-            if current_price <= zone['price_level'] * 1.002 and distance_pct <= 0.15:
-                print(f"✅ Price near demand zone at {zone['price_level']:.5f} for mean-reversion LONG")
-                
-                # Check for M1 bullish reversal confirmation
-                reversal_signal = confirm_m1_reversal_signal(df_m1)
-                if reversal_signal == 'Bullish Reversal':
-                    print("✅ M1 bullish reversal signal confirmed!")
-                    
-                    entry_reason = f"Range-bound mean-reversion + Demand zone bounce + M1 bullish reversal"
-                    signal = {'entry_reason': entry_reason, 'confidence': 75}
-                    return execute_trade(client, instrument, 'LONG', signal, df_m1)
-                else:
-                    print(f"❌ No M1 bullish reversal confirmation (got: {reversal_signal})")
-        
-        print("❌ No valid range-bound mean-reversion opportunities found")
-        print("📋 Range-bound strategy requires:")
-        print("   • Price very close to strong M5 supply/demand zone (< 0.15%)")
-        print("   • Strong M1 reversal candle confirmation")
-        return False
-        
-    except Exception as e:
-        print(f"❌ Error in range-bound strategy analysis: {e}")
-        return False
-
-def execute_trade(
-    client, 
-    instrument: str, 
-    direction: str, 
-    signal: Dict, 
-    df_m1: pd.DataFrame
-) -> bool:
-    """
-    Execute the trade with proper risk management.
-    
-    Args:
-        client: OANDA API client
-        instrument: Trading instrument  
-        direction: 'LONG' or 'SHORT'
-        signal: Signal information dict
-        df_m1: M1 timeframe data for stop loss calculation
-    
-    Returns:
-        bool: True if trade executed successfully
-    """
-    try:
-        print(f"\n💼 EXECUTING {direction} TRADE:")
-        print(f"📋 Entry Reason: {signal['entry_reason']}")
-        print(f"🎯 Confidence: {signal['confidence']}%")
-        
-        # Get current price
-        current_price = df_m1['close'].iloc[-1]
-        
-        # Calculate risk management parameters
-        risk_params = calculate_risk_management(df_m1, direction, current_price)
-        
-        if not risk_params['valid']:
-            print(f"✗ Risk management check failed: {risk_params['reason']}")
-            return False
-        
-        # Determine position size (0.5% risk per trade)
+        # Get account balance
         account_summary = get_account_summary(client)
         account_balance = float(account_summary.get('balance', 10000))
         
-        risk_amount = account_balance * 0.005  # 0.5% risk
-        stop_distance_pips = abs(current_price - risk_params['stop_loss']) * 10000
+        # Risk 0.5% of account per trade
+        risk_amount = account_balance * 0.005
         
         # Calculate position size based on risk
-        if stop_distance_pips > 0:
-            # For EUR_USD, 1 pip = $1 per 10k units approximately
-            position_size = int((risk_amount / stop_distance_pips) * 10000)
+        if risk_pips > 0:
+            # Position size calculation for forex
+            position_size = int((risk_amount / risk_pips) * 10000)
             
             # Apply position size limits
             max_position = 50000  # Maximum position size
@@ -434,30 +326,33 @@ def execute_trade(
         else:
             position_size = 10000  # Default position size
         
-        # Set direction for units (positive = long, negative = short)
-        units = position_size if direction == 'LONG' else -position_size
-        
-        print(f"💰 Position Details:")
-        print(f"  Units: {abs(units):,}")
-        print(f"  Entry: {current_price:.5f}")
-        print(f"  Stop Loss: {risk_params['stop_loss']:.5f}")
-        print(f"  Take Profit: {risk_params['take_profit']:.5f}")
+        print(f"✓ Position sizing:")
+        print(f"  Account Balance: ${account_balance:,.2f}")
         print(f"  Risk Amount: ${risk_amount:.2f}")
+        print(f"  Position Size: {position_size:,} units")
+        
+        # ==================================================================
+        # STEP 7: EXECUTE TRADE
+        # ==================================================================
+        print("\n🚀 STEP 7: Executing trade...")
+        
+        units = position_size  # Long position
         
         # Execute the trade
         order_response = place_market_order(
             client=client,
             instrument=instrument,
             units=units,
-            stop_loss_price=risk_params['stop_loss'],
-            take_profit_price=risk_params['take_profit']
+            stop_loss_price=stop_loss,
+            take_profit_price=take_profit
         )
         
-        # Log the trade if successful
         if order_response and 'orderFillTransaction' in order_response:
             fill_transaction = order_response['orderFillTransaction']
             trade_id = fill_transaction.get('tradeOpened', {}).get('tradeID', 'N/A')
-            fill_price = float(fill_transaction.get('price', current_price))
+            fill_price = float(fill_transaction.get('price', entry_price))
+            
+            entry_reason = f"MeanReversionSR: Support level + RSI oversold ({current_candle['rsi']:.1f}) + {pattern_type} pattern"
             
             # Log to journal
             log_success = log_new_trade(
@@ -465,108 +360,41 @@ def execute_trade(
                 trade_id=int(trade_id) if trade_id != 'N/A' else 0,
                 instrument=instrument,
                 units=units,
-                direction=direction,
+                direction='LONG',
                 entry_price=fill_price,
-                sl_price=risk_params['stop_loss'],
-                tp_price=risk_params['take_profit'],
-                reason=signal['entry_reason']
+                sl_price=stop_loss,
+                tp_price=take_profit,
+                reason=entry_reason
             )
             
             if log_success:
+                logger.info(f"MeanReversionSR trade executed successfully for {instrument}")
                 print(f"✅ Trade executed and logged successfully!")
+                print(f"📋 Trade ID: {trade_id}")
+                print(f"📋 Fill Price: {fill_price:.5f}")
+                print(f"📋 Entry Reason: {entry_reason}")
                 return True
             else:
+                logger.warning(f"Trade executed but logging failed for {instrument}")
                 print(f"⚠ Trade executed but logging failed")
                 return True
         else:
-            print(f"✗ Trade execution failed")
+            logger.error(f"Trade execution failed for {instrument}")
+            print(f"❌ Trade execution failed")
             return False
             
     except Exception as e:
-        print(f"✗ Error executing trade: {e}")
+        logger.error(f"Error in MeanReversionSR strategy for {instrument}: {e}")
+        print(f"❌ Error in strategy check for {instrument}: {e}")
+        print(f"📋 Full traceback:\n{traceback.format_exc()}")
         return False
-
-def calculate_risk_management(df_m1: pd.DataFrame, direction: str, entry_price: float) -> Dict:
-    """
-    Calculate stop loss and take profit levels based on market structure.
-    
-    Args:
-        df_m1: M1 timeframe data
-        direction: Trade direction ('LONG' or 'SHORT')
-        entry_price: Entry price
-    
-    Returns:
-        Dict with stop_loss, take_profit, and validity
-    """
-    try:
-        # Calculate ATR for dynamic stop placement
-        df_copy = df_m1.copy()
-        df_copy['tr'] = np.maximum(
-            df_copy['high'] - df_copy['low'],
-            np.maximum(
-                abs(df_copy['high'] - df_copy['close'].shift(1)),
-                abs(df_copy['low'] - df_copy['close'].shift(1))
-            )
-        )
-        atr = df_copy['tr'].rolling(window=14).mean().iloc[-1]
-        
-        if direction == 'LONG':
-            # For long trades: Stop below recent swing low or 2*ATR
-            recent_lows = df_m1['low'].tail(10)
-            swing_low = recent_lows.min()
-            
-            # Use the more conservative (further) stop
-            atr_stop = entry_price - (2 * atr)
-            structural_stop = swing_low - (0.5 * atr)  # Add buffer below swing low
-            
-            stop_loss = min(atr_stop, structural_stop)
-            
-            # Take profit at 1.5:1 reward-to-risk ratio
-            risk_distance = entry_price - stop_loss
-            take_profit = entry_price + (risk_distance * 1.5)
-            
-        else:  # SHORT
-            # For short trades: Stop above recent swing high or 2*ATR
-            recent_highs = df_m1['high'].tail(10)
-            swing_high = recent_highs.max()
-            
-            # Use the more conservative (further) stop
-            atr_stop = entry_price + (2 * atr)
-            structural_stop = swing_high + (0.5 * atr)  # Add buffer above swing high
-            
-            stop_loss = max(atr_stop, structural_stop)
-            
-            # Take profit at 1.5:1 reward-to-risk ratio
-            risk_distance = stop_loss - entry_price
-            take_profit = entry_price - (risk_distance * 1.5)
-        
-        # Validate stop loss distance (minimum 5 pips, maximum 50 pips)
-        stop_distance_pips = abs(entry_price - stop_loss) * 10000
-        
-        if stop_distance_pips < 5:
-            return {'valid': False, 'reason': f'Stop too close ({stop_distance_pips:.1f} pips)'}
-        
-        if stop_distance_pips > 50:
-            return {'valid': False, 'reason': f'Stop too far ({stop_distance_pips:.1f} pips)'}
-        
-        return {
-            'valid': True,
-            'stop_loss': round(stop_loss, 5),
-            'take_profit': round(take_profit, 5),
-            'risk_pips': stop_distance_pips,
-            'reward_pips': abs(take_profit - entry_price) * 10000,
-            'risk_reward_ratio': abs(take_profit - entry_price) / abs(entry_price - stop_loss)
-        }
-        
-    except Exception as e:
-        return {'valid': False, 'reason': f'Risk calculation error: {e}'}
 
 def test_strategy_handler():
     """
-    Test the strategy handler with a demo instrument.
+    Test the MeanReversionSR strategy handler with a demo instrument.
     """
     try:
-        print("Testing Strategy Handler...")
+        print("Testing MeanReversionSR Strategy Handler...")
         
         # Get API client
         client = get_api_client()
@@ -574,10 +402,10 @@ def test_strategy_handler():
         # Test with EUR_USD
         result = run_strategy_check(client, 'EUR_USD')
         
-        print(f"\n✅ Strategy handler test completed. Trade executed: {result}")
+        print(f"\n✅ MeanReversionSR strategy test completed. Trade executed: {result}")
         
     except Exception as e:
-        print(f"✗ Strategy handler test failed: {e}")
+        print(f"❌ MeanReversionSR strategy test failed: {e}")
 
 if __name__ == "__main__":
     # Run test when script is executed directly

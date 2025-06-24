@@ -3,78 +3,45 @@ Trading Journal Module
 
 This module provides a comprehensive database-driven journaling system for logging
 all trading activities, including trade entries, exits, and performance metrics.
-Uses SQLite for lightweight, local storage of trading data.
+
+Updated for Phase 2: Now uses SQLAlchemy ORM with atomic transactions while
+maintaining backward compatibility with existing API.
 """
 
 import sqlite3
 import os
 from datetime import datetime
 from typing import Optional, Dict, List, Any
+from loguru import logger
+
+# New SQLAlchemy imports
+from models import db_manager, Trade
+from trade_operations import create_trade, close_trade, get_open_trades as get_open_trades_orm
 
 def initialize_database(db_name: str = 'trading_journal.db') -> None:
     """
-    Initialize the trading journal database and create the trades table if it doesn't exist.
+    Initialize the trading journal database using the new SQLAlchemy ORM system.
+    
+    This function now creates the enhanced schema and migrates from legacy format.
     
     Args:
         db_name (str): Name of the SQLite database file
     """
     try:
-        # Connect to SQLite database (creates file if it doesn't exist)
-        conn = sqlite3.connect(db_name)
-        cursor = conn.cursor()
+        # Initialize the global database manager
+        global db_manager
+        db_manager.database_url = f"sqlite:///{db_name}"
+        db_manager.engine = db_manager.__class__(db_manager.database_url).engine
+        db_manager.SessionLocal = db_manager.__class__(db_manager.database_url).SessionLocal
         
-        # Create trades table with comprehensive columns for trade tracking
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS trades (
-                trade_id INTEGER PRIMARY KEY,
-                instrument TEXT NOT NULL,
-                units INTEGER NOT NULL,
-                direction TEXT NOT NULL CHECK (direction IN ('LONG', 'SHORT')),
-                entry_price REAL NOT NULL,
-                stop_loss_price REAL,
-                take_profit_price REAL,
-                entry_time TEXT NOT NULL,
-                status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'CLOSED')),
-                exit_price REAL,
-                exit_time TEXT,
-                profit_loss REAL,
-                entry_reason TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
+        # Create tables and migrate from legacy schema
+        db_manager.create_tables()
+        db_manager.migrate_from_legacy_schema()
         
-        # Create index on trade_id for faster lookups
-        cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_trade_id ON trades(trade_id)
-        ''')
+        logger.info(f"Trading journal database initialized successfully: {db_name}")
         
-        # Create index on instrument for filtering by currency pair
-        cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_instrument ON trades(instrument)
-        ''')
-        
-        # Create index on status for filtering open/closed trades
-        cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_status ON trades(status)
-        ''')
-        
-        # Create index on entry_time for chronological analysis
-        cursor.execute('''
-            CREATE INDEX IF NOT EXISTS idx_entry_time ON trades(entry_time)
-        ''')
-        
-        # Commit changes and close connection
-        conn.commit()
-        conn.close()
-        
-        print(f"✓ Trading journal database initialized successfully: {db_name}")
-        
-    except sqlite3.Error as e:
-        print(f"✗ Error initializing database: {e}")
-        raise
     except Exception as e:
-        print(f"✗ Unexpected error initializing database: {e}")
+        logger.error(f"Error initializing database: {e}")
         raise
 
 def log_new_trade(
@@ -90,10 +57,12 @@ def log_new_trade(
     reason: Optional[str] = None
 ) -> bool:
     """
-    Log a new trade entry to the database.
+    Log a new trade entry using the new SQLAlchemy ORM system.
+    
+    Maintains backward compatibility while using atomic transactions.
     
     Args:
-        db_name (str): Database file name
+        db_name (str): Database file name (used for compatibility)
         trade_id (int): Unique trade identifier from OANDA
         instrument (str): Trading instrument (e.g., 'EUR_USD')
         units (int): Number of units traded
@@ -108,49 +77,26 @@ def log_new_trade(
         bool: True if successful, False otherwise
     """
     try:
-        # Use current time if entry_time not provided
-        if entry_time is None:
-            entry_time = datetime.now().isoformat()
-        
-        # Connect to database
-        conn = sqlite3.connect(db_name)
-        cursor = conn.cursor()
-        
-        # Insert new trade record
-        cursor.execute('''
-            INSERT INTO trades (
-                trade_id, instrument, units, direction, entry_price, 
-                stop_loss_price, take_profit_price, entry_time, status, entry_reason
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'OPEN', ?)
-        ''', (
-            trade_id, instrument, units, direction, entry_price,
-            sl_price, tp_price, entry_time, reason
-        ))
-        
-        # Commit changes and close connection
-        conn.commit()
-        conn.close()
-        
-        print(f"✓ New trade logged successfully:")
-        print(f"  - Trade ID: {trade_id}")
-        print(f"  - Instrument: {instrument}")
-        print(f"  - Direction: {direction}")
-        print(f"  - Units: {abs(units)}")
-        print(f"  - Entry Price: {entry_price}")
-        print(f"  - Entry Time: {entry_time}")
-        if reason:
-            print(f"  - Reason: {reason}")
-        
-        return True
-        
-    except sqlite3.IntegrityError as e:
-        print(f"✗ Database integrity error logging trade {trade_id}: {e}")
-        return False
-    except sqlite3.Error as e:
-        print(f"✗ Database error logging trade {trade_id}: {e}")
-        return False
+        with db_manager.get_session() as session:
+            trade = create_trade(
+                session=session,
+                symbol=instrument,
+                quantity=float(units),
+                direction=direction,
+                entry_price=entry_price,
+                strategy_name="Legacy",  # Default for backward compatibility
+                strategy_version=None,
+                stop_loss_price=sl_price,
+                take_profit_price=tp_price,
+                entry_reason=reason,
+                trade_id=trade_id  # Pass the OANDA trade ID
+            )
+            
+            logger.info(f"New trade logged successfully (OANDA ID: {trade_id}, Internal ID: {trade.id})")
+            return True
+            
     except Exception as e:
-        print(f"✗ Unexpected error logging trade {trade_id}: {e}")
+        logger.error(f"Error logging trade {trade_id}: {e}")
         return False
 
 def update_closed_trade(
@@ -161,63 +107,44 @@ def update_closed_trade(
     profit_loss: Optional[float] = None
 ) -> bool:
     """
-    Update a trade record when the position is closed.
+    Update a trade record when the position is closed using atomic transactions.
     
     Args:
-        db_name (str): Database file name
-        trade_id (int): Trade identifier to update
+        db_name (str): Database file name (for compatibility)
+        trade_id (int): OANDA trade identifier to update
         exit_price (float): Exit price
         exit_time (str, optional): Exit timestamp (ISO format)
-        profit_loss (float, optional): Profit/loss amount
+        profit_loss (float, optional): Profit/loss amount (legacy compatibility)
     
     Returns:
         bool: True if successful, False otherwise
     """
     try:
-        # Use current time if exit_time not provided
-        if exit_time is None:
-            exit_time = datetime.now().isoformat()
-        
-        # Connect to database
-        conn = sqlite3.connect(db_name)
-        cursor = conn.cursor()
-        
-        # Update trade record
-        cursor.execute('''
-            UPDATE trades 
-            SET status = 'CLOSED', 
-                exit_price = ?, 
-                exit_time = ?, 
-                profit_loss = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE trade_id = ?
-        ''', (exit_price, exit_time, profit_loss, trade_id))
-        
-        # Check if trade was found and updated
-        if cursor.rowcount == 0:
-            print(f"✗ No trade found with ID: {trade_id}")
-            conn.close()
-            return False
-        
-        # Commit changes and close connection
-        conn.commit()
-        conn.close()
-        
-        print(f"✓ Trade {trade_id} updated successfully:")
-        print(f"  - Status: CLOSED")
-        print(f"  - Exit Price: {exit_price}")
-        print(f"  - Exit Time: {exit_time}")
-        if profit_loss is not None:
-            pnl_symbol = "+" if profit_loss >= 0 else ""
-            print(f"  - P&L: {pnl_symbol}{profit_loss:.2f}")
-        
-        return True
-        
-    except sqlite3.Error as e:
-        print(f"✗ Database error updating trade {trade_id}: {e}")
-        return False
+        with db_manager.get_session() as session:
+            # Find trade by OANDA trade_id
+            trade = session.query(Trade).filter(Trade.trade_id == trade_id).first()
+            
+            if not trade:
+                logger.error(f"No trade found with OANDA ID: {trade_id}")
+                return False
+            
+            # Use the atomic close_trade function
+            closed_trade = close_trade(
+                session=session,
+                trade_id=trade.id,  # Use internal ID for the close function
+                exit_price=exit_price,
+                exit_reason="Manual",  # Default reason for legacy compatibility
+                fees=0.0  # Default fees
+            )
+            
+            if closed_trade:
+                logger.info(f"Trade {trade_id} closed successfully (Net P&L: {closed_trade.pnl_net:+.2f})")
+                return True
+            else:
+                return False
+                
     except Exception as e:
-        print(f"✗ Unexpected error updating trade {trade_id}: {e}")
+        logger.error(f"Error updating trade {trade_id}: {e}")
         return False
 
 def get_trade_by_id(db_name: str, trade_id: int) -> Optional[Dict[str, Any]]:
