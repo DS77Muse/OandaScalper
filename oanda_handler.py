@@ -465,6 +465,79 @@ def sync_database_with_oanda_positions(client):
             'sync_timestamp': datetime.now().isoformat()
         }
 
+def close_all_open_positions(client):
+    """
+    Close all open positions in the OANDA account.
+    
+    Args:
+        client: Authenticated OANDA API client
+        
+    Returns:
+        dict: Result containing success status and details
+    """
+    try:
+        # Get account ID
+        account_id = os.getenv('OANDA_ACCOUNT_ID')
+        if not account_id:
+            return {'success': False, 'error': 'Account ID not found in environment variables'}
+        
+        # Get all open positions
+        open_positions = get_open_positions_from_oanda(client)
+        
+        if not open_positions:
+            return {'success': True, 'closed_count': 0, 'message': 'No open positions to close'}
+        
+        closed_count = 0
+        errors = []
+        
+        for position in open_positions:
+            try:
+                instrument = position['instrument']
+                
+                # Check if position has long units
+                long_units = float(position.get('long', {}).get('units', 0))
+                if long_units != 0:
+                    # Close long position
+                    close_request = positions.PositionClose(
+                        accountID=account_id,
+                        instrument=instrument,
+                        data={"longUnits": "ALL"}
+                    )
+                    response = client.request(close_request)
+                    closed_count += 1
+                
+                # Check if position has short units  
+                short_units = float(position.get('short', {}).get('units', 0))
+                if short_units != 0:
+                    # Close short position
+                    close_request = positions.PositionClose(
+                        accountID=account_id,
+                        instrument=instrument,
+                        data={"shortUnits": "ALL"}
+                    )
+                    response = client.request(close_request)
+                    closed_count += 1
+                    
+            except Exception as e:
+                error_msg = f"Failed to close position for {instrument}: {e}"
+                errors.append(error_msg)
+                print(f"❌ {error_msg}")
+        
+        result = {
+            'success': True,
+            'closed_count': closed_count,
+            'total_positions': len(open_positions)
+        }
+        
+        if errors:
+            result['errors'] = errors
+            result['success'] = len(errors) == 0  # Success only if no errors
+        
+        return result
+        
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
 # Test function to verify API connection
 def test_connection():
     """

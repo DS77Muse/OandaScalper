@@ -10,13 +10,14 @@ import time
 import schedule
 import signal
 import sys
+import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import traceback
 import json
 
 # Import our custom modules
-from oanda_handler import get_api_client, get_account_summary, get_tradable_instruments, sync_database_with_oanda_positions
+from oanda_handler import get_api_client, get_account_summary, get_tradable_instruments, sync_database_with_oanda_positions, get_open_trades_from_oanda
 from strategy_handler import run_strategy_check
 from journal import initialize_database, get_trading_summary, display_trading_summary, get_open_trades
 from logging_config import configure_logging
@@ -269,6 +270,179 @@ def trading_job(instrument_list=None):
         logger.error(f"❌ Critical error in trading job: {e}")
         logger.error(f"Full traceback: {traceback.format_exc()}")
 
+def close_all_positions(client):
+    """
+    Close all open positions in the OANDA account.
+    
+    Args:
+        client: OANDA API client
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    from oanda_handler import close_all_open_positions
+    
+    try:
+        logger.info("🔄 Closing all open positions...")
+        result = close_all_open_positions(client)
+        
+        if result.get('success', False):
+            closed_count = result.get('closed_count', 0)
+            logger.info(f"✅ Successfully closed {closed_count} position(s)")
+            return True
+        else:
+            logger.error(f"❌ Failed to close positions: {result.get('error', 'Unknown error')}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"❌ Error closing positions: {e}")
+        return False
+
+def clear_trading_logs():
+    """
+    Clear trading logs and reset the database for a fresh start.
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        logger.info("🧹 Clearing trading logs and database...")
+        
+        # Remove existing database file
+        db_file = 'trading_journal.db'
+        if os.path.exists(db_file):
+            os.remove(db_file)
+            logger.info(f"✅ Removed existing database: {db_file}")
+        
+        # Clear log files
+        log_dir = 'logs'
+        if os.path.exists(log_dir):
+            for filename in os.listdir(log_dir):
+                if filename.endswith('.log'):
+                    log_file = os.path.join(log_dir, filename)
+                    try:
+                        os.remove(log_file)
+                        logger.info(f"✅ Removed log file: {log_file}")
+                    except Exception as e:
+                        logger.warning(f"⚠ Could not remove log file {log_file}: {e}")
+        
+        logger.info("✅ Trading logs cleared successfully")
+        return True
+        
+    except Exception as e:
+        logger.error(f"❌ Error clearing logs: {e}")
+        return False
+
+def assess_open_positions(client) -> Dict[str, Any]:
+    """
+    Assess current open positions and return summary information.
+    
+    Args:
+        client: OANDA API client
+        
+    Returns:
+        Dict containing position assessment information
+    """
+    try:
+        # Get positions from OANDA
+        oanda_positions = get_open_trades_from_oanda(client)
+        
+        # Get positions from local database
+        db_positions = get_open_trades('trading_journal.db')
+        
+        # Get account summary for P&L information
+        account_summary = get_account_summary(client)
+        unrealized_pnl = float(account_summary.get('unrealizedPL', 0))
+        
+        assessment = {
+            'oanda_positions': oanda_positions,
+            'db_positions': db_positions,
+            'oanda_count': len(oanda_positions),
+            'db_count': len(db_positions),
+            'unrealized_pnl': unrealized_pnl,
+            'account_balance': float(account_summary.get('balance', 0)),
+            'margin_used': float(account_summary.get('marginUsed', 0)),
+            'margin_available': float(account_summary.get('marginAvailable', 0))
+        }
+        
+        return assessment
+        
+    except Exception as e:
+        logger.error(f"❌ Error assessing positions: {e}")
+        return {
+            'error': str(e),
+            'oanda_positions': [],
+            'db_positions': [],
+            'oanda_count': 0,
+            'db_count': 0,
+            'unrealized_pnl': 0,
+            'account_balance': 0,
+            'margin_used': 0,
+            'margin_available': 0
+        }
+
+def prompt_user_for_position_action(assessment: Dict[str, Any]) -> str:
+    """
+    Prompt user for action regarding existing positions.
+    
+    Args:
+        assessment: Position assessment data
+        
+    Returns:
+        str: User's choice ('continue', 'close', or 'exit')
+    """
+    print(f"\n{'='*80}")
+    print("📋 EXISTING POSITIONS DETECTED")
+    print(f"{'='*80}")
+    
+    print(f"🏦 Account Summary:")
+    print(f"   Balance: ${assessment['account_balance']:,.2f}")
+    print(f"   Margin Used: ${assessment['margin_used']:,.2f}")
+    print(f"   Margin Available: ${assessment['margin_available']:,.2f}")
+    print(f"   Unrealized P&L: ${assessment['unrealized_pnl']:+,.2f}")
+    
+    print(f"\n📊 Position Summary:")
+    print(f"   OANDA Positions: {assessment['oanda_count']}")
+    print(f"   Database Records: {assessment['db_count']}")
+    
+    if assessment['oanda_positions']:
+        print(f"\n🔍 Open Positions in OANDA:")
+        for i, pos in enumerate(assessment['oanda_positions'][:10], 1):  # Show first 10
+            instrument = pos.get('instrument', 'N/A')
+            direction = 'LONG' if float(pos.get('units', 0)) > 0 else 'SHORT'
+            units = abs(float(pos.get('units', 0)))
+            unrealized_pl = float(pos.get('unrealizedPL', 0))
+            print(f"   {i:2d}. {instrument} {direction} {units:,.0f} units (P&L: ${unrealized_pl:+.2f})")
+        
+        if len(assessment['oanda_positions']) > 10:
+            print(f"   ... and {len(assessment['oanda_positions']) - 10} more positions")
+    
+    print(f"\n{'='*80}")
+    print("🤔 What would you like to do?")
+    print("   [1] CONTINUE with existing positions")
+    print("   [2] CLOSE ALL positions and start fresh")
+    print("   [3] EXIT the application")
+    print(f"{'='*80}")
+    
+    while True:
+        try:
+            choice = input("\nEnter your choice (1/2/3): ").strip()
+            
+            if choice == '1':
+                return 'continue'
+            elif choice == '2':
+                return 'close'
+            elif choice == '3':
+                return 'exit'
+            else:
+                print("❌ Invalid choice. Please enter 1, 2, or 3.")
+                
+        except KeyboardInterrupt:
+            print("\n\n🛑 User interrupted. Exiting...")
+            return 'exit'
+        except Exception as e:
+            print(f"❌ Error reading input: {e}")
+
 def display_startup_banner():
     """
     Display startup banner with system information.
@@ -349,12 +523,42 @@ def main():
         instrument_list = get_tradable_instruments(client)
         logger.info(f"✅ Loaded {len(instrument_list)} tradable instruments.")
         
-        # Check current open trades
-        open_trades = get_open_trades('trading_journal.db')
-        if open_trades:
-            logger.info(f"📋 Found {len(open_trades)} open trades from previous session:")
-            for trade in open_trades:
-                logger.info(f"   {trade['instrument']} {trade['direction']} @ {trade['entry_price']}")
+        # Assess existing positions and prompt user for action
+        logger.info("🔍 Assessing existing positions...")
+        position_assessment = assess_open_positions(client)
+        
+        # Check if there are any open positions
+        if position_assessment['oanda_count'] > 0 or position_assessment['db_count'] > 0:
+            # Prompt user for action
+            user_choice = prompt_user_for_position_action(position_assessment)
+            
+            if user_choice == 'exit':
+                logger.info("👋 User chose to exit. Goodbye!")
+                return
+            elif user_choice == 'close':
+                logger.info("🔄 User chose to close all positions and start fresh...")
+                
+                # Close all positions
+                if position_assessment['oanda_count'] > 0:
+                    close_success = close_all_positions(client)
+                    if not close_success:
+                        logger.error("❌ Failed to close positions. Exiting for safety.")
+                        return
+                
+                # Clear logs and database
+                clear_success = clear_trading_logs()
+                if not clear_success:
+                    logger.warning("⚠ Some logs could not be cleared, but continuing...")
+                
+                # Reinitialize database
+                logger.info("🗄️ Reinitializing trading journal database...")
+                initialize_database('trading_journal.db')
+                
+                logger.info("✅ Fresh start completed!")
+            else:
+                logger.info("✅ Continuing with existing positions...")
+        else:
+            logger.info("✅ No existing positions found. Starting fresh...")
         
         # Schedule trading jobs
         logger.info("⏰ Setting up trading schedule...")
