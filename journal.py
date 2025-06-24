@@ -76,40 +76,19 @@ def log_new_trade(
     Returns:
         bool: True if successful, False otherwise
     """
-    try:
-        with db_manager.get_session() as session:
-            trade = create_trade(
-                session=session,
-                symbol=instrument,
-                quantity=float(units),
-                direction=direction,
-                entry_price=entry_price,
-                strategy_name="Legacy",  # Default for backward compatibility
-                strategy_version=None,
-                stop_loss_price=sl_price,
-                take_profit_price=tp_price,
-                entry_reason=reason,
-                trade_id=trade_id  # Pass the OANDA trade ID
-            )
-            
-            logger.info(f"New trade logged successfully (OANDA ID: {trade_id}, Internal ID: {trade.id})")
-            return True
-            
-    except Exception as e:
-        logger.error(f"Error logging trade {trade_id}: {e}")
-        # Fallback to direct SQLite logging with existing schema
-        return log_new_trade_fallback(
-            db_name=db_name,
-            trade_id=trade_id,
-            instrument=instrument,
-            units=units,
-            direction=direction,
-            entry_price=entry_price,
-            sl_price=sl_price,
-            tp_price=tp_price,
-            entry_time=entry_time,
-            reason=reason
-        )
+    # Use direct SQLite logging with existing schema (skip SQLAlchemy for compatibility)
+    return log_new_trade_fallback(
+        db_name=db_name,
+        trade_id=trade_id,
+        instrument=instrument,
+        units=units,
+        direction=direction,
+        entry_price=entry_price,
+        sl_price=sl_price,
+        tp_price=tp_price,
+        entry_time=entry_time,
+        reason=reason
+    )
 
 def update_closed_trade(
     db_name: str,
@@ -237,6 +216,15 @@ def log_new_trade_fallback(
         # Use current timestamp if not provided
         if entry_time is None:
             entry_time = datetime.now().isoformat()
+        
+        # Check if trade already exists (to handle duplicate logging attempts)
+        cursor.execute('SELECT trade_id FROM trades WHERE trade_id = ?', (trade_id,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            logger.info(f"Trade {trade_id} already exists in database - skipping duplicate logging")
+            conn.close()
+            return True
         
         # Insert trade using existing table structure
         cursor.execute('''

@@ -183,6 +183,63 @@ def detect_hammer_pattern(df: pd.DataFrame) -> pd.Series:
     
     return hammer
 
+def get_pip_multiplier(instrument: str) -> float:
+    """
+    Get the pip multiplier for calculating pips based on instrument type.
+    
+    Args:
+        instrument: Trading instrument (e.g., 'EUR_USD', 'USD_JPY')
+    
+    Returns:
+        float: Multiplier to convert price difference to pips
+    """
+    if 'JPY' in instrument:
+        return 100.0  # JPY pairs: 1 pip = 0.01
+    elif 'THB' in instrument:
+        return 1000.0  # THB pairs: 1 pip = 0.001 (smaller than JPY)
+    else:
+        return 10000.0  # Most other pairs: 1 pip = 0.0001
+
+def get_instrument_limits(instrument: str) -> tuple:
+    """
+    Get minimum and maximum position sizes for an instrument.
+    
+    Args:
+        instrument: Trading instrument
+        
+    Returns:
+        tuple: (min_units, max_units)
+    """
+    if 'JPY' in instrument:
+        # JPY pairs: smaller units due to different price scale
+        return (1000, 10000)  # 1K to 10K units
+    elif any(x in instrument for x in ['USD_CNH', 'USD_HKD', 'USD_THB']):
+        # Asian currencies with larger nominal values
+        return (1000, 5000)   # 1K to 5K units  
+    elif any(x in instrument for x in ['USD_ZAR', 'USD_MXN', 'USD_NOK']):
+        # Emerging/commodity currencies
+        return (1000, 8000)   # 1K to 8K units
+    else:
+        # Major and cross pairs
+        return (1000, 15000)  # 1K to 15K units
+
+def get_default_position_size(instrument: str) -> int:
+    """
+    Get default position size when risk-based calculation fails.
+    
+    Args:
+        instrument: Trading instrument
+        
+    Returns:
+        int: Default position size in units
+    """
+    if 'JPY' in instrument:
+        return 2000   # Conservative for JPY pairs
+    elif any(x in instrument for x in ['USD_CNH', 'USD_HKD', 'USD_THB']):
+        return 1500   # Conservative for Asian currencies
+    else:
+        return 3000   # Conservative for major/cross pairs
+
 def detect_bullish_pattern(df: pd.DataFrame) -> pd.Series:
     """
     Detect basic bullish candlestick patterns
@@ -310,22 +367,32 @@ def run_strategy_check(client, instrument: str) -> bool:
             print(f"{instrument:8} | {' | '.join(status_parts)} | Risk:❌ Invalid spread/structure")
             return False
         
-        risk_pips = (entry_price - stop_loss) * 10000
-        reward_pips = (take_profit - entry_price) * 10000
+        # Calculate pips correctly based on instrument type
+        pip_multiplier = get_pip_multiplier(instrument)
+        risk_pips = (entry_price - stop_loss) * pip_multiplier
+        reward_pips = (take_profit - entry_price) * pip_multiplier
         rr_ratio = reward_pips / risk_pips if risk_pips > 0 else 0
         
         status_parts.append(f"Risk:✓({risk_pips:.0f}p,RR{rr_ratio:.1f})")
         
-        # STEP 6: Position sizing
+        # STEP 6: Value-based position sizing
         account_summary = get_account_summary(client)
         account_balance = float(account_summary.get('balance', 10000))
-        risk_amount = account_balance * 0.005
+        risk_amount = account_balance * 0.005  # Risk 0.5% of account
         
-        if risk_pips > 0:
-            position_size = int((risk_amount / risk_pips) * 10000)
-            position_size = max(1000, min(position_size, 50000))
+        # Calculate position size based on risk amount and price movement
+        price_risk = abs(entry_price - stop_loss)
+        if price_risk > 0:
+            # Value-based sizing: risk_amount / price_risk = position_value
+            position_value = risk_amount / price_risk
+            position_size = int(position_value)
+            
+            # Apply instrument-specific limits
+            min_units, max_units = get_instrument_limits(instrument)
+            position_size = max(min_units, min(position_size, max_units))
         else:
-            position_size = 10000
+            # Fallback for no risk (should rarely happen)
+            position_size = get_default_position_size(instrument)
         
         status_parts.append(f"Size:✓({position_size:,})")
         
