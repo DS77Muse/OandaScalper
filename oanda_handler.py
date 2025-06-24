@@ -89,8 +89,8 @@ def get_historical_data(client, instrument, count=100, granularity='M5'):
         # Create DataFrame
         df = pd.DataFrame(data)
         
-        # Convert time to datetime
-        df['time'] = pd.to_datetime(df['time'])
+        # Convert time to datetime (OANDA uses ISO 8601 format)
+        df['time'] = pd.to_datetime(df['time'], format='ISO8601')
         
         # Set time as index
         df.set_index('time', inplace=True)
