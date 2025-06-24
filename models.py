@@ -31,11 +31,11 @@ class Trade(Base):
     # Legacy trade_id for OANDA compatibility
     trade_id = Column(Integer, nullable=True, unique=True)  # Original OANDA trade ID
     
-    # Entry information
-    entry_timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    # Entry information (mapped to existing database columns)
+    entry_timestamp = Column('entry_time', DateTime, nullable=False, default=datetime.utcnow)
     entry_price = Column(Float, nullable=False)
-    symbol = Column(String(50), nullable=False)  # e.g., 'EUR/USD'
-    quantity = Column(Float, nullable=False)  # Position size (positive for long, negative for short)
+    symbol = Column('instrument', String(50), nullable=False)  # e.g., 'EUR/USD'
+    quantity = Column('units', Float, nullable=False)  # Position size (positive for long, negative for short)
     direction = Column(String(10), nullable=False)  # 'LONG' or 'SHORT'
     status = Column(String(10), nullable=False, default='OPEN')  # 'OPEN' or 'CLOSED'
     
@@ -47,15 +47,16 @@ class Trade(Base):
     stop_loss_price = Column(Float, nullable=True)
     take_profit_price = Column(Float, nullable=True)
     
-    # Exit information (nullable until trade is closed)
-    exit_timestamp = Column(DateTime, nullable=True)
+    # Exit information (nullable until trade is closed) (mapped to existing database columns)
+    exit_timestamp = Column('exit_time', DateTime, nullable=True)
     exit_price = Column(Float, nullable=True)
     exit_reason = Column(String(50), nullable=True)  # 'StopLoss', 'TakeProfit', 'Signal', 'Manual'
     
-    # P&L calculations (calculated on trade closure)
+    # P&L calculations (calculated on trade closure) - compatible with existing columns
     pnl_gross = Column(Float, nullable=True)  # Gross profit/loss before costs
     pnl_net = Column(Float, nullable=True)    # Net profit/loss after fees
     pnl_pct = Column(Float, nullable=True)    # Percentage return
+    profit_loss = Column(Float, nullable=True)  # Legacy P&L column for compatibility
     
     # Additional context
     entry_reason = Column(Text, nullable=True)  # Detailed signal description

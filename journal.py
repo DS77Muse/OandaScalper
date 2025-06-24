@@ -97,7 +97,19 @@ def log_new_trade(
             
     except Exception as e:
         logger.error(f"Error logging trade {trade_id}: {e}")
-        return False
+        # Fallback to direct SQLite logging with existing schema
+        return log_new_trade_fallback(
+            db_name=db_name,
+            trade_id=trade_id,
+            instrument=instrument,
+            units=units,
+            direction=direction,
+            entry_price=entry_price,
+            sl_price=sl_price,
+            tp_price=tp_price,
+            entry_time=entry_time,
+            reason=reason
+        )
 
 def update_closed_trade(
     db_name: str,
@@ -201,6 +213,54 @@ def get_open_trades(db_name: str) -> List[Dict[str, Any]]:
     except sqlite3.Error as e:
         print(f"✗ Database error retrieving open trades: {e}")
         return []
+
+def log_new_trade_fallback(
+    db_name: str,
+    trade_id: int,
+    instrument: str,
+    units: int,
+    direction: str,
+    entry_price: float,
+    sl_price: Optional[float] = None,
+    tp_price: Optional[float] = None,
+    entry_time: Optional[str] = None,
+    reason: Optional[str] = None
+) -> bool:
+    """
+    Fallback function to log trades using direct SQLite with existing schema.
+    Used when SQLAlchemy ORM fails due to schema mismatches.
+    """
+    try:
+        conn = sqlite3.connect(db_name)
+        cursor = conn.cursor()
+        
+        # Use current timestamp if not provided
+        if entry_time is None:
+            entry_time = datetime.now().isoformat()
+        
+        # Insert trade using existing table structure
+        cursor.execute('''
+            INSERT INTO trades (
+                trade_id, instrument, units, direction, entry_price,
+                stop_loss_price, take_profit_price, entry_time, status,
+                entry_reason, created_at, updated_at, strategy_name
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            trade_id, instrument, units, direction, entry_price,
+            sl_price, tp_price, entry_time, 'OPEN',
+            reason, datetime.now().isoformat(), datetime.now().isoformat(),
+            'MeanReversionSR'
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"Trade {trade_id} logged successfully using fallback method")
+        return True
+        
+    except sqlite3.Error as e:
+        logger.error(f"Fallback logging failed for trade {trade_id}: {e}")
+        return False
 
 def get_trading_summary(db_name: str) -> Dict[str, Any]:
     """
