@@ -6,7 +6,7 @@ providing robust data management with atomic transactions and comprehensive
 trade lifecycle tracking.
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, Index
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, Index, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
@@ -165,12 +165,12 @@ class DatabaseManager:
             with self.get_session() as session:
                 # Try to query the old schema structure
                 result = session.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='trades'"
+                    text("SELECT name FROM sqlite_master WHERE type='table' AND name='trades'")
                 ).fetchone()
                 
                 if result:
                     # Check if new columns exist
-                    pragma_result = session.execute("PRAGMA table_info(trades)").fetchall()
+                    pragma_result = session.execute(text("PRAGMA table_info(trades)")).fetchall()
                     existing_columns = [row[1] for row in pragma_result]
                     
                     required_new_columns = [
@@ -187,13 +187,13 @@ class DatabaseManager:
                         # Add missing columns
                         for column in missing_columns:
                             if column == 'strategy_name':
-                                session.execute("ALTER TABLE trades ADD COLUMN strategy_name TEXT DEFAULT 'Legacy'")
+                                session.execute(text("ALTER TABLE trades ADD COLUMN strategy_name TEXT DEFAULT 'Legacy'"))
                             elif column == 'strategy_version':
-                                session.execute("ALTER TABLE trades ADD COLUMN strategy_version TEXT")
+                                session.execute(text("ALTER TABLE trades ADD COLUMN strategy_version TEXT"))
                             elif column == 'exit_reason':
-                                session.execute("ALTER TABLE trades ADD COLUMN exit_reason TEXT")
+                                session.execute(text("ALTER TABLE trades ADD COLUMN exit_reason TEXT"))
                             elif column in ['pnl_gross', 'pnl_net', 'pnl_pct', 'fees', 'max_favorable_excursion', 'max_adverse_excursion']:
-                                session.execute(f"ALTER TABLE trades ADD COLUMN {column} REAL")
+                                session.execute(text(f"ALTER TABLE trades ADD COLUMN {column} REAL"))
                         
                         session.commit()
                         logger.info("Database schema migration completed successfully")
