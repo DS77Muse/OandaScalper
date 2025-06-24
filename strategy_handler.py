@@ -66,7 +66,12 @@ def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
 
 def identify_support_resistance(df: pd.DataFrame, window: int = 20) -> Tuple[pd.Series, pd.Series]:
     """
-    Identify support and resistance levels using rolling window approach
+    Identify support and resistance levels using hybrid approach for real-time detection
+    
+    This function combines:
+    1. Historical pivot detection using centered rolling windows
+    2. Recent level detection for current/near-current candles
+    3. Proximity-based support/resistance identification
     
     Args:
         df: DataFrame with OHLC data
@@ -75,13 +80,82 @@ def identify_support_resistance(df: pd.DataFrame, window: int = 20) -> Tuple[pd.
     Returns:
         Tuple of (support_levels, resistance_levels) as boolean Series
     """
-    # Rolling window to identify local minima (support) and maxima (resistance)
-    support = df['low'] == df['low'].rolling(window=window, center=True).min()
-    resistance = df['high'] == df['high'].rolling(window=window, center=True).max()
+    # Initialize result series
+    support = pd.Series(False, index=df.index)
+    resistance = pd.Series(False, index=df.index)
     
-    # Fill NaN values with False
-    support = support.fillna(False)
-    resistance = resistance.fillna(False)
+    # PART 1: Historical pivot detection (center=True for older candles)
+    half_window = window // 2
+    
+    # Only apply centered rolling to candles that have enough data on both sides
+    valid_start = half_window
+    valid_end = len(df) - half_window
+    
+    if valid_end > valid_start:
+        # Calculate centered rolling for historical data
+        historical_support = df['low'] == df['low'].rolling(window=window, center=True).min()
+        historical_resistance = df['high'] == df['high'].rolling(window=window, center=True).max()
+        
+        # Apply to valid range only
+        support.iloc[valid_start:valid_end] = historical_support.iloc[valid_start:valid_end].fillna(False)
+        resistance.iloc[valid_start:valid_end] = historical_resistance.iloc[valid_start:valid_end].fillna(False)
+    
+    # PART 2: Recent level detection for current and near-current candles
+    # Check last few candles that couldn't be evaluated with centered approach
+    recent_start = max(0, valid_end - 5)  # Check last 5 candles plus any after valid_end
+    
+    for i in range(recent_start, len(df)):
+        current_low = df['low'].iloc[i]
+        current_high = df['high'].iloc[i]
+        
+        # Look back (not forward) to find local minima/maxima
+        lookback_start = max(0, i - window + 1)
+        lookback_end = i + 1
+        
+        if lookback_end - lookback_start >= 3:  # Need minimum data for comparison
+            lookback_lows = df['low'].iloc[lookback_start:lookback_end]
+            lookback_highs = df['high'].iloc[lookback_start:lookback_end]
+            
+            # Support: current low is the minimum in the lookback window
+            if current_low == lookback_lows.min():
+                support.iloc[i] = True
+            
+            # Resistance: current high is the maximum in the lookback window  
+            if current_high == lookback_highs.max():
+                resistance.iloc[i] = True
+    
+    # PART 3: Proximity-based support detection for current candle
+    # If current candle is not itself a pivot, check if it's near recent support/resistance
+    current_idx = len(df) - 1
+    current_price = df['close'].iloc[current_idx]
+    proximity_threshold = 0.002  # 0.2% proximity
+    
+    # Look for recent support/resistance levels within last 50 candles
+    lookback_range = min(50, current_idx)
+    recent_data = df.iloc[current_idx - lookback_range:current_idx]
+    
+    # Find recent support levels (where support=True)
+    recent_support_indices = recent_data.index[support.loc[recent_data.index]]
+    if len(recent_support_indices) > 0:
+        recent_support_prices = df.loc[recent_support_indices, 'low']
+        
+        # Check if current price is near any recent support level
+        for support_price in recent_support_prices:
+            price_diff = abs(current_price - support_price) / support_price
+            if price_diff <= proximity_threshold:
+                support.iloc[current_idx] = True
+                break
+    
+    # Similar check for resistance levels
+    recent_resistance_indices = recent_data.index[resistance.loc[recent_data.index]]
+    if len(recent_resistance_indices) > 0:
+        recent_resistance_prices = df.loc[recent_resistance_indices, 'high']
+        
+        for resistance_price in recent_resistance_prices:
+            price_diff = abs(current_price - resistance_price) / resistance_price
+            if price_diff <= proximity_threshold:
+                resistance.iloc[current_idx] = True
+                break
     
     return support, resistance
 
